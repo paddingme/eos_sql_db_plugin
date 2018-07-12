@@ -1,5 +1,4 @@
-#ifndef TRANSACTIONS_TABLE_H
-#define TRANSACTIONS_TABLE_H
+#pragma once
 
 #include <memory>
 #include <soci/soci.h>
@@ -22,4 +21,4 @@ private:
 
 } // namespace
 
-#endif // TRANSACTIONS_TABLE_H
+

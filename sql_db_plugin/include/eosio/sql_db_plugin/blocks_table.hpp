@@ -1,5 +1,4 @@
-#ifndef BLOCKS_TABLE_H
-#define BLOCKS_TABLE_H
+#pragma once
 
 #include <memory>
 #include <chrono>
@@ -28,4 +27,4 @@ private:
 
 } // namespace
 
-#endif // BLOCKS_TABLE_H
+

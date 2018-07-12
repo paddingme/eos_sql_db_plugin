@@ -5,7 +5,7 @@ if(NOT SOCI_FOUND)
 endif()
 
 message(STATUS "Database SQL plugin: enabled")
-
+file(GLOB HEADERS "include/eosio/timing_plugin/*.hpp")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} include db)
 
 add_library(sql_db_plugin
@@ -23,5 +23,5 @@ target_link_libraries(sql_db_plugin
     ${SOCI_LIBRARY}
     )
 
-add_subdirectory(test)
+#add_subdirectory(test)
 

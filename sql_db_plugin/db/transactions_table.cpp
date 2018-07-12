@@ -1,4 +1,5 @@
-#include "transactions_table.h"
+// #include "transactions_table.hpp"
+#include <eosio/sql_db_plugin/transactions_table.hpp>
 
 #include <chrono>
 #include <fc/log/logger.hpp>

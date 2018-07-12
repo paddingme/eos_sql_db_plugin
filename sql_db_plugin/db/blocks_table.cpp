@@ -1,4 +1,5 @@
-#include "blocks_table.h"
+// #include "blocks_table.hpp"
+#include <eosio/sql_db_plugin/blocks_table.hpp>
 
 #include <fc/log/logger.hpp>
 

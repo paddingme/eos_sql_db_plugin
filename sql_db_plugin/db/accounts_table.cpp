@@ -1,5 +1,5 @@
-#include "accounts_table.h"
-
+// #include "accounts_table.hpp"
+#include <eosio/sql_db_plugin/accounts_table.hpp>
 #include <fc/log/logger.hpp>
 
 namespace eosio {
@@ -23,22 +23,34 @@ void accounts_table::drop()
 
 void accounts_table::create()
 {
-    *m_session << "CREATE TABLE accounts("
-            "name VARCHAR(12) PRIMARY KEY,"
-            "abi JSON DEFAULT NULL,"
-            "created_at DATETIME DEFAULT NOW(),"
-            "updated_at DATETIME DEFAULT NOW()) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
+    *m_session << "CREATE TABLE `accounts` ("
+                    "`id` bigint(20) NOT NULL AUTO_INCREMENT,"
+                    "`name` varchar(12) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                    "`abi` json DEFAULT NULL,"
+                    "`created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                    "`updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
+                    "PRIMARY KEY (`id`),"
+                    "KEY `idx_accounts_name` (`name`)"
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
 
-    *m_session << "CREATE TABLE accounts_keys("
-            "account VARCHAR(12),"
-            "public_key varchar(64) DEFAULT NULL,"
-            "permission VARCHAR(12), FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
+    *m_session << "CREATE TABLE `accounts_keys` ("
+                "`id` bigint(20) NOT NULL AUTO_INCREMENT,"
+                "`account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                "`public_key` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                "`permission` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                "PRIMARY KEY (`id`),"
+                "KEY `account` (`account`)"
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
 }
 
-void accounts_table::add(string name)
-{
+void accounts_table::add(string name) {
     *m_session << "INSERT INTO accounts (name) VALUES (:name)",
             soci::use(name);
+}
+
+void accounts_table::add_eosio(string name,string abi) {
+    *m_session << "INSERT INTO accounts (name,abi) VALUES (:name,:abi)",
+            soci::use(name),soci::use(abi);
 }
 
 bool accounts_table::exist(string name)

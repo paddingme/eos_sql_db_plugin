@@ -10,8 +10,6 @@
 #include <boost/signals2/connection.hpp>
 #include <memory>
 
-#include "consumer.h"
-
 namespace eosio {
 
 /**
@@ -33,22 +31,21 @@ namespace eosio {
  *
  *   If SQL DB env not available (#ifndef SQL DB) this plugin is a no-op.
  */
-class sql_db_plugin final : public plugin<sql_db_plugin> {
-public:
-    APPBASE_PLUGIN_REQUIRES((chain_plugin))
+class sql_db_plugin : public plugin<sql_db_plugin> {
+    public:
+        APPBASE_PLUGIN_REQUIRES((chain_plugin))
 
-    virtual void set_program_options(options_description& cli, options_description& cfg) override;
+        sql_db_plugin();
+        virtual ~sql_db_plugin();
 
-    void plugin_initialize(const variables_map& options);
-    void plugin_startup();
-    void plugin_shutdown();
+        virtual void set_program_options(options_description& cli, options_description& cfg) override;
+        virtual void plugin_initialize(const variables_map& options);
+        virtual void plugin_startup();
+        virtual void plugin_shutdown();
 
-private:
-    std::unique_ptr<consumer<chain::block_state_ptr>> m_block_consumer;
-    fc::optional<boost::signals2::scoped_connection> m_block_connection;
-
-    std::unique_ptr<consumer<chain::block_state_ptr>> m_irreversible_block_consumer;
-    fc::optional<boost::signals2::scoped_connection> m_irreversible_block_connection;
+    private:
+        std::unique_ptr<class sql_db_plugin_impl> my;
+    
 };
 
 }
