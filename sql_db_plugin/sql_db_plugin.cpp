@@ -12,9 +12,6 @@ namespace {
 const char* BLOCK_START_OPTION = "sql_db-block-start";
 const char* BUFFER_SIZE_OPTION = "sql_db-queue-size";
 const char* SQL_DB_URI_OPTION = "sql_db-uri";
-const char* HARD_REPLAY_OPTION = "hard-replay-blockchain";
-const char* RESYNC_OPTION = "delete-all-blocks";
-const char* REPLAY_OPTION = "replay-blockchain";
 const char* REBUILD_DATABASE = "rebuild-database";
 }
 
@@ -74,9 +71,6 @@ namespace eosio {
                 (SQL_DB_URI_OPTION, bpo::value<std::string>(),
                 "Sql DB URI connection string"
                 " If not specified then plugin is disabled. Default database 'EOS' is used if not specified in URI.")
-                (HARD_REPLAY_OPTION,bpo::bool_switch()->default_value(false),"")
-                (REPLAY_OPTION,bpo::bool_switch()->default_value(false),"")
-                (RESYNC_OPTION,bpo::bool_switch()->default_value(false),"")
                 (REBUILD_DATABASE,bpo::bool_switch()->default_value(false),"")
                 ;
     }
@@ -96,11 +90,7 @@ namespace eosio {
 
         auto db = std::make_unique<database>(uri_str, block_num_start);
 
-        ilog("${judge}",("judge",options.at(REBUILD_DATABASE).as<bool>()));
-        if (options.at(HARD_REPLAY_OPTION).as<bool>() ||
-                options.at(REPLAY_OPTION).as<bool>() ||
-                    options.at(RESYNC_OPTION).as<bool>() ||
-                        !db->is_started()) {
+        if (!db->is_started()) {
             if (block_num_start == 0) {
                 ilog("Resync requested: wiping database");
                 db->wipe();
