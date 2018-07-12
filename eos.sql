@@ -70,6 +70,7 @@ CREATE TABLE `actions` (
   `eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from'),
   `receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver'),
   `payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer'),
+  `newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name'),
   PRIMARY KEY (`id`),
   KEY `idx_actions_account` (`account`),
   KEY `idx_actions_tx_id` (`transaction_id`),
@@ -77,7 +78,8 @@ CREATE TABLE `actions` (
   KEY `idx_actions_eosto` (`eosto`),
   KEY `idx_actions_eosfrom` (`eosfrom`),
   KEY `idx_actions_receiver` (`receiver`),
-  KEY `idx_actions_payer` (`payer`)
+  KEY `idx_actions_payer` (`payer`),
+  KEY `idx_actions_newaccount` (`newaccount`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

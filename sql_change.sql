@@ -18,11 +18,13 @@ ALTER TABLE `actions` ADD COLUMN `eosto` varchar(12) GENERATED ALWAYS AS (`data`
 ALTER TABLE `actions` ADD COLUMN `eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from');
 ALTER TABLE `actions` ADD COLUMN `receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver');
 ALTER TABLE `actions` ADD COLUMN `payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer');
+ALTER TABLE `actions` ADD COLUMN `newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name');
 
 ALTER TABLE `actions` ADD INDEX `idx_actions_eosto` (`eosto`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_eosfrom` (`eosfrom`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_receiver` (`receiver`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_payer` (`payer`);
+ALTER TABLE `actions` ADD INDEX `idx_actions_newaccount` (`newaccount`);
 
 ALTER TABLE `accounts` DROP PRIMARY KEY;
 ALTER TABLE `accounts` ADD COLUMN `id` bigint(20) NOT NULL primary key auto_increment first;
