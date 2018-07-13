@@ -95,12 +95,14 @@ namespace eosio {
             parse_actions( action );
         } catch(std::exception& e){
             wlog(e.what());
+        } catch(...){
+            wlog("Unknown excpetion.");
         }
     }
 
     void actions_table::parse_actions( chain::action action ) {
         
-        if(action.name == newaccount) {
+        if(action.name == newaccount && action.account == chain::config::system_account_name) {
             auto action_data = action.data_as<chain::newaccount>();
             *m_session << "INSERT INTO accounts (name) VALUES (:name)",
                     soci::use(action_data.name.to_string());
@@ -131,6 +133,7 @@ namespace eosio {
         string json_str = "{}";
 
         if(action.data.size() ==0 ){
+            ilog("data size is 0.");
              return json_str;
         }
 
@@ -145,7 +148,7 @@ namespace eosio {
 
                         try{
                             *m_session << "UPDATE accounts SET abi = :abi, updated_at = NOW() WHERE name = :name",soci::use(json_str),soci::use(setabi.account.to_string());
-                            ilog("update abi ${n}",("n",action.account.to_string()));
+                            // ilog("update abi ${n}",("n",action.account.to_string()));
                         }catch(...){
                             wlog("insert account abi failed");
                         }
@@ -175,6 +178,8 @@ namespace eosio {
                     wlog("unable to convert account abi to abi_def for ${s}::${n} :${abi}",("s",action.account)("n",action.name)("abi",action.data));
                     wlog("analysis data failed");
                 }
+            }else{
+                wlog("${n} abi is null.",("n",action.account));
             }
 
         }catch( std::exception& e ) {
@@ -187,7 +192,7 @@ namespace eosio {
         return json_str;
     }
 
-    const chain::account_name actions_table::newaccount = "newaccount";
-    const chain::account_name actions_table::setabi = "setabi";
+    const chain::account_name actions_table::newaccount = chain::newaccount::get_name();
+    const chain::account_name actions_table::setabi = chain::setabi::get_name();
 
 } // namespace

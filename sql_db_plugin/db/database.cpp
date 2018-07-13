@@ -15,15 +15,11 @@ namespace eosio
     }
 
     void database::wipe() {
-        *m_session << "SET foreign_key_checks = 0;";
-
         m_actions_table->drop();
         // m_transactions_table->drop();
         //TODO
         // m_blocks_table->drop();
         m_accounts_table->drop();
-
-        *m_session << "SET foreign_key_checks = 1;";
 
         // m_transactions_table->create();
         m_actions_table->create();
@@ -35,6 +31,7 @@ namespace eosio
     }
 
     bool database::is_started() {
+        ilog(system_account);
         return m_accounts_table->exist(system_account);
     }
 

@@ -144,10 +144,9 @@ class consumer final : public boost::noncopyable {
     
 
     void consumer::run() {
-
-        try{
-            dlog("Consumer thread Start");
-            while (!exit) { 
+        dlog("Consumer thread Start");
+        while (!exit) { 
+            try{
                 boost::mutex::scoped_lock lock(mtx);
                 while(block_state_queue.empty()&&
                         irreversible_block_state_queue.empty()&&
@@ -186,19 +185,19 @@ class consumer final : public boost::noncopyable {
                     ilog("draining queue, size: ${q}", ("q", transaction_metadata_size + transaction_trace_size + block_state_size + irreversible_block_state_size));
                 }
 
-                // process blocks
-                while (!block_state_process_queue.empty()) {
-                    const auto& bs = block_state_process_queue.front();
-                    db->consume_block_state( bs );
-                    block_state_process_queue.pop_front();
-                }
+                // // process blocks
+                // while (!block_state_process_queue.empty()) {
+                //     const auto& bs = block_state_process_queue.front();
+                //     db->consume_block_state( bs );
+                //     block_state_process_queue.pop_front();
+                // }
 
-                // process irreversible blocks
-                while (!irreversible_block_state_process_queue.empty()) {
-                    const auto& bs = irreversible_block_state_process_queue.front();
-                    db->consume_irreversible_block_state(bs);
-                    irreversible_block_state_process_queue.pop_front();
-                }
+                // // process irreversible blocks
+                // while (!irreversible_block_state_process_queue.empty()) {
+                //     const auto& bs = irreversible_block_state_process_queue.front();
+                //     db->consume_irreversible_block_state(bs);
+                //     irreversible_block_state_process_queue.pop_front();
+                // }
 
                 // process transactions
                 while (!transaction_metadata_process_queue.empty()) {
@@ -207,21 +206,22 @@ class consumer final : public boost::noncopyable {
                     transaction_metadata_process_queue.pop_front();
                 }
 
-                while (!transaction_trace_process_queue.empty()) {
-                    const auto& tt = transaction_trace_process_queue.front();
-                    db->consume_transaction_trace(tt);
-                    transaction_trace_process_queue.pop_front();
-                }
+                // while (!transaction_trace_process_queue.empty()) {
+                //     const auto& tt = transaction_trace_process_queue.front();
+                //     db->consume_transaction_trace(tt);
+                //     transaction_trace_process_queue.pop_front();
+                // }
 
-            }
+            } catch (fc::exception& e) {
+                elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
+            } catch (std::exception& e) {
+                elog("STD Exception while consuming block ${e}", ("e", e.what()));
+            } catch (...) {
+                elog("Unknown exception while consuming block");
+            }  
 
-        } catch (fc::exception& e) {
-            elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
-        } catch (std::exception& e) {
-            elog("STD Exception while consuming block ${e}", ("e", e.what()));
-        } catch (...) {
-            elog("Unknown exception while consuming block");
         }
+        
         dlog("Consumer thread End");
     }
 

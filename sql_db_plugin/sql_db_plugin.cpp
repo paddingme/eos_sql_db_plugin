@@ -90,6 +90,7 @@ namespace eosio {
 
         auto db = std::make_unique<database>(uri_str, block_num_start);
 
+        // ilog("aaaaaaaaaa : ${judge}",("judge",db->is_started()));
         if (!db->is_started()) {
             if (block_num_start == 0) {
                 ilog("Resync requested: wiping database");
@@ -102,21 +103,21 @@ namespace eosio {
         FC_ASSERT(chain_plug);
         auto& chain = chain_plug->chain();
 
-        my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
-            my->accepted_block(bs);
-        } ));
+        // my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
+        //     // my->accepted_block(bs);
+        // } ));
 
-        my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
-            my->applied_irreversible_block(bs);
-        } ));
+        // my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
+        //     // my->applied_irreversible_block(bs);
+        // } ));
 
         my->accepted_transaction_connection.emplace(chain.accepted_transaction.connect([this](const chain::transaction_metadata_ptr& tm){
             my->accepted_transaction(tm);
         } ));
 
-        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
-            my->applied_transaction(tt);
-        } ));
+        // my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
+        //     // my->applied_transaction(tt);
+        // } ));
     }
 
     void sql_db_plugin::plugin_startup() {
