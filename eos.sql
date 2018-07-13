@@ -23,11 +23,13 @@ DROP TABLE IF EXISTS `accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `accounts` (
-  `name` varchar(12) COLLATE utf8mb4_general_ci NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(12) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `abi` json DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`name`)
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_accounts_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -39,11 +41,12 @@ DROP TABLE IF EXISTS `accounts_keys`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `accounts_keys` (
-  `account` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `public_key` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `permission` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  KEY `account` (`account`),
-  CONSTRAINT `accounts_keys_ibfk_1` FOREIGN KEY (`account`) REFERENCES `accounts` (`name`)
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `public_key` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `permission` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -55,18 +58,19 @@ DROP TABLE IF EXISTS `actions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `actions` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `account` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `transaction_id` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `seq` smallint(6) DEFAULT NULL,
-  `parent` int(11) DEFAULT NULL,
-  `name` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `transaction_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `seq` smallint(6) NOT NULL DEFAULT 0,
+  `parent` bigint(20) NOT NULL DEFAULT 0,
+  `name` varchar(12) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `data` json DEFAULT NULL,
   `eosto` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.to'),
   `eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from'),
   `receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver'),
   `payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer'),
+  `newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name'),
   PRIMARY KEY (`id`),
   KEY `idx_actions_account` (`account`),
   KEY `idx_actions_tx_id` (`transaction_id`),
@@ -75,9 +79,8 @@ CREATE TABLE `actions` (
   KEY `idx_actions_eosfrom` (`eosfrom`),
   KEY `idx_actions_receiver` (`receiver`),
   KEY `idx_actions_payer` (`payer`),
-  CONSTRAINT `actions_ibfk_1` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `actions_ibfk_2` FOREIGN KEY (`account`) REFERENCES `accounts` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=363 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `idx_actions_newaccount` (`newaccount`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -88,13 +91,13 @@ DROP TABLE IF EXISTS `actions_accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `actions_accounts` (
-  `actor` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `permission` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `action_id` int(11) NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `actor` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `permission` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `action_id` bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
   KEY `idx_actions_actor` (`actor`),
-  KEY `idx_actions_action_id` (`action_id`),
-  CONSTRAINT `actions_accounts_ibfk_1` FOREIGN KEY (`action_id`) REFERENCES `actions` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `actions_accounts_ibfk_2` FOREIGN KEY (`actor`) REFERENCES `accounts` (`name`)
+  KEY `idx_actions_action_id` (`action_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -106,24 +109,23 @@ DROP TABLE IF EXISTS `blocks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `blocks` (
-  `id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `block_number` int(11) NOT NULL AUTO_INCREMENT,
-  `prev_block_id` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `irreversible` tinyint(1) DEFAULT '0',
-  `timestamp` datetime DEFAULT CURRENT_TIMESTAMP,
-  `transaction_merkle_root` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `action_merkle_root` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `producer` varchar(12) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `version` int(11) NOT NULL DEFAULT '0',
+  `id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `block_number` bigint(20) NOT NULL AUTO_INCREMENT,
+  `prev_block_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `irreversible` tinyint(1) NOT NULL DEFAULT '0',
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `transaction_merkle_root` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `action_merkle_root` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `producer` varchar(12) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `version` bigint(20) NOT NULL DEFAULT '0',
   `new_producers` json DEFAULT NULL,
-  `num_transactions` int(11) DEFAULT '0',
-  `confirmed` int(11) DEFAULT NULL,
+  `num_transactions` bigint(20) NOT NULL DEFAULT '0',
+  `confirmed` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `block_number` (`block_number`),
   KEY `idx_blocks_producer` (`producer`),
-  KEY `idx_blocks_number` (`block_number`),
-  CONSTRAINT `blocks_ibfk_1` FOREIGN KEY (`producer`) REFERENCES `accounts` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=231110 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `idx_blocks_number` (`block_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -134,11 +136,12 @@ DROP TABLE IF EXISTS `stakes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `stakes` (
-  `account` varchar(13) COLLATE utf8mb4_general_ci NOT NULL,
-  `cpu` double(14,4) DEFAULT NULL,
-  `net` double(14,4) DEFAULT NULL,
-  PRIMARY KEY (`account`),
-  CONSTRAINT `stakes_ibfk_1` FOREIGN KEY (`account`) REFERENCES `accounts` (`name`)
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `cpu` double(14,4) NOT NULL DEFAULT 0.0000,
+  `net` double(14,4) NOT NULL DEFAULT 0.0000,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `idx_stakes_account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -150,11 +153,12 @@ DROP TABLE IF EXISTS `tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `tokens` (
-  `account` varchar(13) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `symbol` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `amount` double(64,4) DEFAULT NULL,
-  KEY `idx_tokens_account` (`account`),
-  CONSTRAINT `tokens_ibfk_1` FOREIGN KEY (`account`) REFERENCES `accounts` (`name`)
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `symbol` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `amount` double(64,4) NOT NULL DEFAULT 0.0000,
+  PRIMARY KEY (`id`),
+  KEY `idx_tokens_account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -166,18 +170,19 @@ DROP TABLE IF EXISTS `transactions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `transactions` (
-  `id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `block_id` int(11) NOT NULL,
-  `ref_block_num` int(11) NOT NULL,
-  `ref_block_prefix` int(11) DEFAULT NULL,
-  `expiration` datetime DEFAULT CURRENT_TIMESTAMP,
-  `pending` tinyint(1) DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `num_actions` int(11) DEFAULT '0',
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `transactions_block_id` (`block_id`),
-  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`block_id`) REFERENCES `blocks` (`block_number`) ON DELETE CASCADE
+  `tx_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `block_id` bigint(20) NOT NULL DEFAULT '0',
+  `ref_block_num` bigint(20) NOT NULL DEFAULT '0',
+  `ref_block_prefix` bigint(20) NOT NULL DEFAULT '0',
+  `expiration` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `pending` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `num_actions` bigint(20) DEFAULT '0',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`tx_id`),
+  UNIQUE INDEX `idx_transactions_id` (`id`),
+  KEY `transactions_block_id` (`block_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -189,11 +194,11 @@ DROP TABLE IF EXISTS `votes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `votes` (
-  `account` varchar(13) COLLATE utf8mb4_general_ci NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `votes` json DEFAULT NULL,
-  PRIMARY KEY (`account`),
-  UNIQUE KEY `account` (`account`),
-  CONSTRAINT `votes_ibfk_1` FOREIGN KEY (`account`) REFERENCES `accounts` (`name`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
