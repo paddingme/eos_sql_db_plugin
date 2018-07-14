@@ -20,6 +20,7 @@ ALTER TABLE `actions` ADD COLUMN `receiver` varchar(12) GENERATED ALWAYS AS (`da
 ALTER TABLE `actions` ADD COLUMN `payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer');
 ALTER TABLE `actions` ADD COLUMN `newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name');
 
+ALTER TABLE `actions` ADD INDEX `idx_actions_name` (`name`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_eosto` (`eosto`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_eosfrom` (`eosfrom`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_receiver` (`receiver`);
