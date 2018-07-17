@@ -27,13 +27,14 @@ namespace eosio {
                         "`name` varchar(12) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
                         "`created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                         "`data` json DEFAULT NULL,"
-                        "`eosto` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.to'),"
-                        "`eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from'),"
-                        "`receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver'),"
-                        "`payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer'),"
-                        "`newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name'),"
+                        "`eosto` varchar(12) DEFAULT NULL,"
+                        "`eosfrom` varchar(12) DEFAULT NULL,"
+                        "`receiver` varchar(12) DEFAULT NULL,"
+                        "`payer` varchar(12) DEFAULT NULL,"
+                        "`newaccount` varchar(12) DEFAULT NULL,"
                         "PRIMARY KEY (`id`),"
                         "KEY `idx_actions_account` (`account`),"
+                        "KEY `idx_actions_name` (`name`),"
                         "KEY `idx_actions_tx_id` (`transaction_id`),"
                         "KEY `idx_actions_created` (`created_at`),"
                         "KEY `idx_actions_eosto` (`eosto`),"
@@ -67,20 +68,27 @@ namespace eosio {
         const auto expiration = boost::chrono::seconds{transaction_time.sec_since_epoch()}.count();
 
         string json = add_data(action);
+        system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
+        // ilog("${to} , ${from} , ${receiver} , ${name}",("to",dataJson.to.to_string())("from",dataJson.from.to_string())("receiver",dataJson.receiver.to_string())("name",dataJson.name.to_string()) );
 
         boost::uuids::random_generator gen;
         boost::uuids::uuid id = gen();
         std::string action_id = boost::uuids::to_string(id);
 
         try{
-            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti) ",
+            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount) ",
                 soci::use(action.account.to_string()),
                 soci::use(seq),
                 soci::use(expiration),
                 soci::use(action.name.to_string()),
                 soci::use(json),
-                soci::use(transaction_id_str);
-        }catch(...){
+                soci::use(transaction_id_str),
+                soci::use(dataJson.to.to_string()),
+                soci::use(dataJson.from.to_string()),
+                soci::use(dataJson.receiver.to_string()),
+                soci::use(dataJson.payer.to_string()),
+                soci::use(dataJson.name.to_string());
+        } catch(...) {
             wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
             wlog("${data}",("data",fc::json::to_string(action)));
         }
