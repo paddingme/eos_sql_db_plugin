@@ -73,6 +73,7 @@ CREATE TABLE `actions` (
   `newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name'),
   PRIMARY KEY (`id`),
   KEY `idx_actions_account` (`account`),
+  KEY `idx_actions_name` (`name`),
   KEY `idx_actions_tx_id` (`transaction_id`),
   KEY `idx_actions_created` (`created_at`),
   KEY `idx_actions_eosto` (`eosto`),
