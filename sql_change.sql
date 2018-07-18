@@ -14,11 +14,12 @@ ALTER TABLE votes DROP FOREIGN KEY votes_ibfk_1;
 ALTER TABLE `tokens` CHANGE `amount` `amount` double(64,4) NOT NULL DEFAULT 0.0000;
 ALTER TABLE `accounts_keys` CHANGE COLUMN `public_key` `public_key` varchar(64) NOT NULL DEFAULT '';
 
-ALTER TABLE `actions` ADD COLUMN `eosto` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.to');
-ALTER TABLE `actions` ADD COLUMN `eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from');
-ALTER TABLE `actions` ADD COLUMN `receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver');
-ALTER TABLE `actions` ADD COLUMN `payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer');
-ALTER TABLE `actions` ADD COLUMN `newaccount` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.name');
+ALTER TABLE `actions` ADD COLUMN `eosto` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '';
+ALTER TABLE `actions` ADD COLUMN `eosfrom` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '';
+ALTER TABLE `actions` ADD COLUMN `receiver` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '';
+ALTER TABLE `actions` ADD COLUMN `payer` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '';
+ALTER TABLE `actions` ADD COLUMN `newaccount` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '';
+ALTER TABLE `actions` CHANGE COLUMN `name` `name` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '';
 
 ALTER TABLE `actions` ADD INDEX `idx_actions_name` (`name`);
 ALTER TABLE `actions` ADD INDEX `idx_actions_eosto` (`eosto`);
