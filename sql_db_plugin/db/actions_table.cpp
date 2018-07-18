@@ -178,8 +178,8 @@ namespace eosio {
             if(!abi_def_account.empty()){
                 try {
                     abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
-                    abis.set_abi( abi );
-                    auto binary_data = abis.binary_to_variant( abis.get_action_type(action.name), action.data);
+                    abis.set_abi( abi, max_serialization_time );
+                    auto binary_data = abis.binary_to_variant( abis.get_action_type(action.name), action.data, max_serialization_time);
                     json_str = fc::json::to_string(binary_data);
                     return json_str;
                 } catch(...) {

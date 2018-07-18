@@ -46,6 +46,8 @@ class actions_table {
         static const chain::account_name newaccount;
         static const chain::account_name setabi;
 
+        fc::microseconds max_serialization_time = fc::microseconds(15*1000);
+
     private:
         std::shared_ptr<soci::session> m_session;
 
