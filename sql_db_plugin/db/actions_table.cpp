@@ -1,244 +1,206 @@
-#include "actions_table.h"
+// #include "actions_table.hpp"
+#include <eosio/sql_db_plugin/actions_table.hpp>
 
 namespace eosio {
 
-actions_table::actions_table(std::shared_ptr<soci::session> session):
-    m_session(session)
-{
+    actions_table::actions_table(std::shared_ptr<soci::session> session):
+        m_session(session) {
 
-}
-
-void actions_table::drop()
-{
-    try {
-        *m_session << "drop table IF EXISTS actions_accounts";
-        *m_session << "drop table IF EXISTS stakes";
-        *m_session << "drop table IF EXISTS votes";
-        *m_session << "drop table IF EXISTS tokens";
-        *m_session << "drop table IF EXISTS actions";
-    }
-    catch(std::exception& e){
-        wlog(e.what());
-    }
-}
-
-void actions_table::create()
-{
-    *m_session << "CREATE TABLE actions("
-            "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-            "account VARCHAR(12),"
-            "transaction_id VARCHAR(64),"
-            "seq SMALLINT,"
-            "parent INT DEFAULT NULL,"
-            "name VARCHAR(12),"
-            "created_at DATETIME DEFAULT NOW(),"
-            "`eosto` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.to'),"
-            "`eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from'),"
-            "`receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver'),"
-            "`payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer'),"
-            "data JSON, FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,"
-            "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
-
-    *m_session << "CREATE INDEX idx_actions_account ON actions (account);";
-    *m_session << "CREATE INDEX idx_actions_tx_id ON actions (transaction_id);";
-    *m_session << "CREATE INDEX idx_actions_created ON actions (created_at);";
-    *m_session << "CREATE INDEX `idx_actions_eosto` ON `actions`(`eosto`);";
-    *m_session << "CREATE INDEX `idx_actions_eosfrom` ON `actions`(`eosfrom`);";
-    *m_session << "CREATE INDEX `idx_actions_receiver` ON `actions`(`receiver`);";
-    *m_session << "CREATE INDEX `idx_actions_payer` ON `actions`(`payer`);";
-
-    *m_session << "CREATE TABLE actions_accounts("
-            "actor VARCHAR(12),"
-            "permission VARCHAR(12),"
-            "action_id INT NOT NULL, FOREIGN KEY (action_id) REFERENCES actions(id) ON DELETE CASCADE,"
-            "FOREIGN KEY (actor) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
-
-    *m_session << "CREATE INDEX idx_actions_actor ON actions_accounts (actor);";
-    *m_session << "CREATE INDEX idx_actions_action_id ON actions_accounts (action_id);";
-
-    *m_session << "CREATE TABLE tokens("
-            "account VARCHAR(13),"
-            "symbol VARCHAR(10),"
-            "amount double(64,4) DEFAULT NULL,"
-            "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;"; // TODO: other tokens could have diff format.
-
-    *m_session << "CREATE INDEX idx_tokens_account ON tokens (account);";
-
-    *m_session << "CREATE TABLE votes("
-            "account VARCHAR(13) PRIMARY KEY,"
-            "votes JSON"
-            ", FOREIGN KEY (account) REFERENCES accounts(name), UNIQUE KEY account (account)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
-
-    *m_session << "CREATE TABLE stakes("
-            "account VARCHAR(13) PRIMARY KEY,"
-            "cpu REAL(14,4),"
-            "net REAL(14,4),"
-            "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
-}
-
-void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq)
-{
-
-    chain::abi_def abi;
-    std::string abi_def_account;
-    chain::abi_serializer abis;
-    soci::indicator ind;
-    const auto transaction_id_str = transaction_id.str();
-    const auto expiration = boost::chrono::seconds{transaction_time.sec_since_epoch()}.count();
-
-    *m_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
-
-    if (!abi_def_account.empty()) {
-        abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
-    } else if (action.account == chain::config::system_account_name) {
-        abi = chain::eosio_contract_abi(abi);
-    } else {
-        return; // no ABI no party. Should we still store it?
     }
 
-    abis.set_abi(abi);
-
-    auto abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data);
-    string json = fc::json::to_string(abi_data);
-
-    boost::uuids::random_generator gen;
-    boost::uuids::uuid id = gen();
-    std::string action_id = boost::uuids::to_string(id);
-
-    *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti) ",
-            soci::use(action.account.to_string()),
-            soci::use(seq),
-            soci::use(expiration),
-            soci::use(action.name.to_string()),
-            soci::use(json),
-            soci::use(transaction_id_str);
-
-    for (const auto& auth : action.authorization) {
-        *m_session << "INSERT INTO actions_accounts(action_id, actor, permission) VALUES (LAST_INSERT_ID(), :ac, :pe) ",
-                soci::use(auth.actor.to_string()),
-                soci::use(auth.permission.to_string());
-    }
-    try {
-        parse_actions(action, abi_data);
-    } catch(std::exception& e){
-        wlog(e.what());
-    }
-}
-
-void actions_table::parse_actions(chain::action action, fc::variant abi_data)
-{
-    // TODO: move all  + catch // public keys update // stake / voting
-    if (action.name == N(issue)) {
-
-        auto to_name = abi_data["to"].as<chain::name>().to_string();
-        auto asset_quantity = abi_data["quantity"].as<chain::asset>();
-        int exist;
-
-        *m_session << "SELECT COUNT(*) FROM tokens WHERE account = :ac AND symbol = :sy",
-                soci::into(exist),
-                soci::use(to_name),
-                soci::use(asset_quantity.get_symbol().name());
-        if (exist > 0) {
-            *m_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac AND symbol = :sy",
-                    soci::use(asset_quantity.to_real()),
-                    soci::use(to_name),
-                    soci::use(asset_quantity.get_symbol().name());
-        } else {
-            *m_session << "INSERT INTO tokens(account, amount, symbol) VALUES (:ac, :am, :as) ",
-                    soci::use(to_name),
-                    soci::use(asset_quantity.to_real()),
-                    soci::use(asset_quantity.get_symbol().name());
+    void actions_table::drop() {
+        try {
+            *m_session << "drop table IF EXISTS actions_accounts";
+            *m_session << "drop table IF EXISTS actions";
+        }catch(std::exception& e) {
+            wlog(e.what());
         }
     }
 
-    if (action.name == N(transfer)) {
+    void actions_table::create() {
+        *m_session << "CREATE TABLE `actions` ("
+                        "`id` bigint(20) NOT NULL AUTO_INCREMENT,"
+                        "`account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`transaction_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`seq` smallint(6) NOT NULL DEFAULT 0,"
+                        "`parent` bigint(20) NOT NULL DEFAULT 0,"
+                        "`name` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                        "`data` json DEFAULT NULL,"
+                        "`eosto` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`eosfrom` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`receiver` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`payer` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`newaccount` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "PRIMARY KEY (`id`),"
+                        "KEY `idx_actions_account` (`account`),"
+                        "KEY `idx_actions_name` (`name`),"
+                        "KEY `idx_actions_tx_id` (`transaction_id`),"
+                        "KEY `idx_actions_created` (`created_at`),"
+                        "KEY `idx_actions_eosto` (`eosto`),"
+                        "KEY `idx_actions_eosfrom` (`eosfrom`),"
+                        "KEY `idx_actions_receiver` (`receiver`),"
+                        "KEY `idx_actions_payer` (`payer`),"
+                        "KEY `idx_actions_newaccount` (`newaccount`)"
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
 
-        auto from_name = abi_data["from"].as<chain::name>().to_string();
-        auto to_name = abi_data["to"].as<chain::name>().to_string();
-        auto asset_quantity = abi_data["quantity"].as<chain::asset>();
-        int exist;
+        *m_session << "CREATE TABLE `actions_accounts` ("
+                        "`id` bigint(20) NOT NULL AUTO_INCREMENT,"
+                        "`actor` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`permission` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
+                        "`action_id` bigint(20) NOT NULL DEFAULT 0,"
+                        "PRIMARY KEY (`id`),"
+                        "KEY `idx_actions_actor` (`actor`),"
+                        "KEY `idx_actions_action_id` (`action_id`)"
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
 
-        *m_session << "SELECT COUNT(*) FROM tokens WHERE account = :ac AND symbol = :sy",
-                soci::into(exist),
-                soci::use(to_name),
-                soci::use(asset_quantity.get_symbol().name());
-        if (exist > 0) {
-            *m_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac AND symbol = :sy",
-                    soci::use(asset_quantity.to_real()),
-                    soci::use(to_name),
-                    soci::use(asset_quantity.get_symbol().name());
-        } else {
-            *m_session << "INSERT INTO tokens(account, amount, symbol) VALUES (:ac, :am, :as) ",
-                    soci::use(to_name),
-                    soci::use(asset_quantity.to_real()),
-                    soci::use(asset_quantity.get_symbol().name());
+    }
+
+    void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq) {
+
+        if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
+
+        chain::abi_def abi;
+        std::string abi_def_account;
+        chain::abi_serializer abis;
+        soci::indicator ind;
+        const auto transaction_id_str = transaction_id.str();
+        const auto expiration = boost::chrono::seconds{transaction_time.sec_since_epoch()}.count();
+
+        string json = add_data(action);
+        system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
+        // ilog("${to} , ${from} , ${receiver} , ${name}",("to",dataJson.to.to_string())("from",dataJson.from.to_string())("receiver",dataJson.receiver.to_string())("name",dataJson.name.to_string()) );
+
+        boost::uuids::random_generator gen;
+        boost::uuids::uuid id = gen();
+        std::string action_id = boost::uuids::to_string(id);
+
+        try{
+            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount) ",
+                soci::use(action.account.to_string()),
+                soci::use(seq),
+                soci::use(expiration),
+                soci::use(action.name.to_string()),
+                soci::use(json),
+                soci::use(transaction_id_str),
+                soci::use(dataJson.to.to_string()),
+                soci::use(dataJson.from.to_string()),
+                soci::use(dataJson.receiver.to_string()),
+                soci::use(dataJson.payer.to_string()),
+                soci::use(dataJson.name.to_string());
+        } catch(...) {
+            wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
+            wlog("${data}",("data",fc::json::to_string(action)));
         }
 
-        *m_session << "UPDATE tokens SET amount = amount - :am WHERE account = :ac AND symbol = :sy",
-                soci::use(asset_quantity.to_real()),
-                soci::use(from_name),
-                soci::use(asset_quantity.get_symbol().name());
-    }
-
-    if (action.account != chain::name(chain::config::system_account_name)) {
-        return;
-    }
-
-    if (action.name == N(voteproducer)) {
-        auto voter = abi_data["voter"].as<chain::name>().to_string();
-        string votes = fc::json::to_string(abi_data["producers"]);
-
-        *m_session << "REPLACE INTO votes(account, votes) VALUES (:ac, :vo) ",
-                soci::use(voter),
-                soci::use(votes);
-    }
-
-
-    if (action.name == N(delegatebw)) {
-        auto account = abi_data["receiver"].as<chain::name>().to_string();
-        auto cpu = abi_data["stake_cpu_quantity"].as<chain::asset>();
-        auto net = abi_data["stake_net_quantity"].as<chain::asset>();
-
-        *m_session << "REPLACE INTO stakes(account, cpu, net) VALUES (:ac, :cp, :ne) ",
-                soci::use(account),
-                soci::use(cpu.to_real()),
-                soci::use(net.to_real());
-    }
-
-    if (action.name == chain::setabi::get_name()) {
-        chain::abi_def abi_setabi;
-        chain::setabi action_data = action.data_as<chain::setabi>();
-        chain::abi_serializer::to_abi(action_data.abi, abi_setabi);
-        string abi_string = fc::json::to_string(abi_setabi);
-
-        *m_session << "UPDATE accounts SET abi = :abi, updated_at = NOW() WHERE name = :name",
-                soci::use(abi_string),
-                soci::use(action_data.account.to_string());
-
-    } else if (action.name == chain::newaccount::get_name()) {
-        auto action_data = action.data_as<chain::newaccount>();
-        *m_session << "INSERT INTO accounts (name) VALUES (:name)",
-                soci::use(action_data.name.to_string());
-
-        for (const auto& key_owner : action_data.owner.keys) {
-            string permission_owner = "owner";
-            string public_key_owner = static_cast<string>(key_owner.key);
-            *m_session << "INSERT INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
-                    soci::use(action_data.name.to_string()),
-                    soci::use(public_key_owner),
-                    soci::use(permission_owner);
+        for (const auto& auth : action.authorization) {
+            *m_session << "INSERT INTO actions_accounts(action_id, actor, permission) VALUES (LAST_INSERT_ID(), :ac, :pe) ",
+                    soci::use(auth.actor.to_string()),
+                    soci::use(auth.permission.to_string());
         }
 
-        for (const auto& key_active : action_data.active.keys) {
-            string permission_active = "active";
-            string public_key_active = static_cast<string>(key_active.key);
-            *m_session << "INSERT INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
-                    soci::use(action_data.name.to_string()),
-                    soci::use(public_key_active),
-                    soci::use(permission_active);
+        try {
+            parse_actions( action );
+        } catch(std::exception& e){
+            wlog(e.what());
+        } catch(...){
+            wlog("Unknown excpetion.");
+        }
+    }
+
+    void actions_table::parse_actions( chain::action action ) {
+        
+        if(action.name == newaccount && action.account == chain::config::system_account_name) {
+            auto action_data = action.data_as<chain::newaccount>();
+            *m_session << "INSERT INTO accounts (name) VALUES (:name)",
+                    soci::use(action_data.name.to_string());
+
+            for (const auto& key_owner : action_data.owner.keys) {
+                string permission_owner = "owner";
+                string public_key_owner = static_cast<string>(key_owner.key);
+                *m_session << "INSERT INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
+                        soci::use(action_data.name.to_string()),
+                        soci::use(public_key_owner),
+                        soci::use(permission_owner);
+            }
+
+            for (const auto& key_active : action_data.active.keys) {
+                string permission_active = "active";
+                string public_key_active = static_cast<string>(key_active.key);
+                *m_session << "INSERT INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
+                        soci::use(action_data.name.to_string()),
+                        soci::use(public_key_active),
+                        soci::use(permission_active);
+            }
+
+        }
+    }
+
+
+    string actions_table::add_data(chain::action action){
+        string json_str = "{}";
+
+        if(action.data.size() ==0 ){
+            ilog("data size is 0.");
+             return json_str;
         }
 
+        try{
+            //当为set contract时 存储abi
+            if( action.account == chain::config::system_account_name ){
+                if( action.name == setabi ){
+                    auto setabi = action.data_as<chain::setabi>();
+                    try{
+                        const chain::abi_def& abi_def = fc::raw::unpack<chain::abi_def>(setabi.abi);
+                        json_str = fc::json::to_string( abi_def );
+
+                        try{
+                            *m_session << "UPDATE accounts SET abi = :abi, updated_at = NOW() WHERE name = :name",soci::use(json_str),soci::use(setabi.account.to_string());
+                            // ilog("update abi ${n}",("n",action.account.to_string()));
+                        }catch(...){
+                            wlog("insert account abi failed");
+                        }
+
+                        return json_str;
+                    }catch(fc::exception& e){
+                        wlog("get setabi data wrong ${e}",("e",e.what()));
+                    }
+                }
+            }
+
+            chain::abi_def abi;
+            std::string abi_def_account;
+            chain::abi_serializer abis;
+            soci::indicator ind;
+            //get account abi
+            *m_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
+
+            if(!abi_def_account.empty()){
+                try {
+                    abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
+                    abis.set_abi( abi, max_serialization_time );
+                    auto binary_data = abis.binary_to_variant( abis.get_action_type(action.name), action.data, max_serialization_time);
+                    json_str = fc::json::to_string(binary_data);
+                    return json_str;
+                } catch(...) {
+                    wlog("unable to convert account abi to abi_def for ${s}::${n} :${abi}",("s",action.account)("n",action.name)("abi",action.data));
+                    wlog("analysis data failed");
+                }
+            }else{
+                wlog("${n} abi is null.",("n",action.account));
+            }
+
+        }catch( std::exception& e ) {
+            ilog( "Unable to convert action.data to ABI: ${s}::${n}, std what: ${e}",
+                    ("s", action.account)( "n", action.name )( "e", e.what()));
+        } catch( ... ) {
+            ilog( "Unable to convert action.data to ABI: ${s}::${n}, unknown exception",
+                    ("s", action.account)( "n", action.name ));
+        }
+        return json_str;
     }
-}
+
+    const chain::account_name actions_table::newaccount = chain::newaccount::get_name();
+    const chain::account_name actions_table::setabi = chain::setabi::get_name();
 
 } // namespace
