@@ -77,13 +77,15 @@ namespace eosio {
         try{
             *m_session << "SELECT data FROM traces WHERE id = :id",soci::into(data),soci::use(trace_id_str);
         } catch(std::exception e) {
+            wlog( "data:${data}",("data",data) );
             wlog("${e}",("e",e.what()));
         } catch(...){
-            wlog("insert trace");
+            wlog( "data:${data}",("data",data) );
         }
 
         if(data.empty()){
-            wlog("trace data is null. ${id}",("id",trace_id_str));
+            wlog( "trace data is null. ${id}",("id",trace_id_str) );
+            return ;
         }
         auto trace = fc::json::from_string(data).as<chain::transaction_trace>();
         // ilog("${result}",("result",trace));
@@ -139,6 +141,7 @@ namespace eosio {
                             soci::use(proxy),
                             soci::use(producers);
                 } catch(std::exception e) {
+                    wlog(" ${voter} ${proxy} ${producers}",("voter",voter)("proxy",proxy)("producers",producers));
                     wlog( "${e}",("e",e.what()) );
                 } catch(...) {
                     wlog(" ${voter} ${proxy} ${producers}",("voter",voter)("proxy",proxy)("producers",producers));

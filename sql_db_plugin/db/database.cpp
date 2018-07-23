@@ -27,9 +27,9 @@ namespace eosio
         // m_actions_table->create();
         // m_accounts_table->create();
         // m_blocks_table->create();
-        // chain::abi_def abi_def;
-        // abi_def = eosio_contract_abi(abi_def);
-        // m_accounts_table->add_eosio(system_account, fc::json::to_string( abi_def ));
+        chain::abi_def abi_def;
+        abi_def = eosio_contract_abi(abi_def);
+        m_accounts_table->add_eosio(system_account, fc::json::to_string( abi_def ));
     }
 
     bool database::is_started() {

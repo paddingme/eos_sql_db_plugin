@@ -52,7 +52,8 @@ namespace eosio {
         const auto num_transactions = (int)bs->trxs.size();
 
 
-        *m_session << "REPLACE INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
+        try{
+            *m_session << "REPLACE INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
                 "producer, version, confirmed, num_transactions) VALUES (:id, :in, :pb, FROM_UNIXTIME(:ti), :tr, :ar, :pa, :ve, :pe, :nt)",
                 soci::use(block_id_str),
                 soci::use(block->block_num()),
@@ -65,11 +66,16 @@ namespace eosio {
                 soci::use(block->confirmed),
                 soci::use(num_transactions);
 
-        if (block->new_producers) {
-            const auto new_producers = fc::json::to_string(block->new_producers->producers);
-            *m_session << "UPDATE blocks SET new_producers = :np WHERE id = :id",
-                    soci::use(new_producers),
-                    soci::use(block_id_str);
+            if (block->new_producers) {
+                const auto new_producers = fc::json::to_string(block->new_producers->producers);
+                *m_session << "UPDATE blocks SET new_producers = :np WHERE id = :id",
+                        soci::use(new_producers),
+                        soci::use(block_id_str);
+            }
+        } catch(std::exception e) {
+            wlog( "add blocks failed. ${e}",("e",e.what()) );
+        } catch(...) {
+            wlog( "add blocks failed. " );
         }
     }
 
@@ -79,6 +85,8 @@ namespace eosio {
             *m_session << "UPDATE blocks SET irreversible = :irreversible WHERE id = :id",
                     soci::use(irreversible?1:0),
                     soci::use(block_id);
+        } catch(std::exception e) {
+            wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {
             wlog("update block irreversible failed. ${id}",("id",block_id));
         }

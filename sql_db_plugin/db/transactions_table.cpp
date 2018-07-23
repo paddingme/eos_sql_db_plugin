@@ -57,8 +57,9 @@ namespace eosio {
                 soci::use(expiration),
                 soci::use(transaction.total_actions());
         } catch (std::exception e) {
+            wlog("insert transaction failed. ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
-        }catch(...){
+        } catch(...){
             wlog("insert transaction failed. ${id}",("id",transaction_id_str));
         }
     }
@@ -69,6 +70,9 @@ namespace eosio {
                 soci::use(block_id),
                 soci::use(irreversible?1:0),
                 soci::use(transaction_id_str);
+        } catch (std::exception e) {
+            wlog("update transaction failed ${id}",("id",transaction_id_str));
+            wlog("${e}",("e",e.what()));
         } catch(...) {
             wlog("update transaction failed ${id}",("id",transaction_id_str));
         }
