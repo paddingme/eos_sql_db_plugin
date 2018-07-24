@@ -162,7 +162,7 @@ namespace eosio {
                 try{
                     
                     if( from == receiver ){
-                        ilog("${transfer}",("transfer",transfer));
+                        // ilog("${transfer}",("transfer",transfer));
                         if(!transfer){
                             *m_session << "UPDATE refunds SET net_amount = ( CASE WHEN net_amount < :na THEN 0 ELSE net_amount - :na END ), "
                                 "cpu_amount = ( CASE WHEN cpu_amount < :ca THEN 0 ELSE cpu_amount - :ca END) WHERE owner = :ow ",
@@ -225,11 +225,12 @@ namespace eosio {
                     // ilog( "blocktime::" );
                     // ilog( "${bt}",("bt",block_timestamp) );
                     *m_session << "INSERT INTO refunds ( owner, request_time, net_amount, cpu_amount )  VALUES( :ac, FROM_UNIXTIME(:rt), :nam, :cam ) "
-                            "on  DUPLICATE key UPDATE net_amount = net_amount +  :nam, cpu_amount = cpu_amount + :cam ",
+                            "on  DUPLICATE key UPDATE request_time = FROM_UNIXTIME(:rt), net_amount = net_amount +  :nam, cpu_amount = cpu_amount + :cam ",
                             soci::use(from),
                             soci::use(block_timestamp),
                             soci::use((-unstake_net_quantity).to_real()),
                             soci::use((-unstake_cpu_quantity).to_real()),
+                            soci::use(block_timestamp),
                             soci::use((-unstake_net_quantity).to_real()),
                             soci::use((-unstake_cpu_quantity).to_real());
 
