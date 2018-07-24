@@ -72,8 +72,9 @@ namespace eosio {
         }
     }
 
-    void traces_table::list( std::string trace_id_str){
+    void traces_table::list( std::string trace_id_str, chain::block_timestamp_type block_time){
         std::string data;
+        block_timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
         try{
             *m_session << "SELECT data FROM traces WHERE id = :id",soci::into(data),soci::use(trace_id_str);
         } catch(std::exception e) {
@@ -161,6 +162,17 @@ namespace eosio {
                 try{
                     
                     if( from == receiver ){
+                        ilog("${transfer}",("transfer",transfer));
+                        if(!transfer){
+                            *m_session << "UPDATE refunds SET net_amount = ( CASE WHEN net_amount < :na THEN 0 ELSE net_amount - :na END ), "
+                                "cpu_amount = ( CASE WHEN cpu_amount < :ca THEN 0 ELSE cpu_amount - :ca END) WHERE owner = :ow ",
+                                soci::use(stake_net_quantity.to_real()),
+                                soci::use(stake_net_quantity.to_real()),
+                                soci::use(stake_cpu_quantity.to_real()),
+                                soci::use(stake_cpu_quantity.to_real()),
+                                soci::use(receiver);
+                        }
+
                         *m_session << "INSERT INTO stakes ( account, net_amount_for_self, cpu_amount_for_self, net_amount_for_other,cpu_amount_for_other )  VALUES( :ac, :nam, :cam, 0, 0 ) "
                             "on  DUPLICATE key UPDATE net_amount_for_self = net_amount_for_self +  :nam, cpu_amount_for_self = cpu_amount_for_self + :cam ",
                             soci::use(receiver),
@@ -210,10 +222,12 @@ namespace eosio {
                             soci::use(unstake_net_quantity.to_real()),
                             soci::use(unstake_cpu_quantity.to_real());
                     }
-
-                    *m_session << "INSERT INTO refunds ( owner, net_amount, cpu_amount )  VALUES( :ac, :nam, :cam ) "
+                    // ilog( "blocktime::" );
+                    // ilog( "${bt}",("bt",block_timestamp) );
+                    *m_session << "INSERT INTO refunds ( owner, request_time, net_amount, cpu_amount )  VALUES( :ac, FROM_UNIXTIME(:rt), :nam, :cam ) "
                             "on  DUPLICATE key UPDATE net_amount = net_amount +  :nam, cpu_amount = cpu_amount + :cam ",
                             soci::use(from),
+                            soci::use(block_timestamp),
                             soci::use((-unstake_net_quantity).to_real()),
                             soci::use((-unstake_cpu_quantity).to_real()),
                             soci::use((-unstake_net_quantity).to_real()),

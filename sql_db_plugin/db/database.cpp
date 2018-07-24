@@ -72,7 +72,7 @@ namespace eosio
                 m_transactions_table->irreversible_set(block_id, true, trx_id_str);
             }
 
-            m_traces_table->list(trx_id_str);
+            m_traces_table->list(trx_id_str, bs->block->timestamp);
 
         }
 

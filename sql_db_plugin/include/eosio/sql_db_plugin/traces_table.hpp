@@ -22,12 +22,14 @@ class traces_table : public mysql_table {
         void drop();
         void create();
         void add( const chain::transaction_trace_ptr& );
-        void list( string );
+        void list( string, chain::block_timestamp_type );
         auto add_data(chain::action action);
         void parse_actions( chain::action action );
         void dfs_inline_traces( vector<chain::action_trace> itc );
         // void irreversible_set( std::string block_id, bool irreversible, std::string transaction_id_str );
         // bool find_transaction( std::string transaction_id_str);
+
+        long long block_timestamp;
 
     private:
         std::shared_ptr<soci::session> m_session;

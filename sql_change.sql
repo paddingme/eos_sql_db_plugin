@@ -42,7 +42,7 @@ DROP TABLE IF EXISTS `refunds`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `refunds` (
   `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `time` timestamp NULL DEFAULT NULL,
+  `request_time` timestamp NULL DEFAULT NULL,
   `net_amount` double(64,4) DEFAULT NULL,
   `cpu_amount` double(64,4) DEFAULT NULL,
   PRIMARY KEY (`owner`) USING BTREE,
