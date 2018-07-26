@@ -79,18 +79,21 @@ namespace eosio {
         }
     }
 
-    void blocks_table::irreversible_set( std::string block_id, bool irreversible ){
-
+    bool blocks_table::irreversible_set( std::string block_id, bool irreversible ){
+        int amount = 0;
         try{
-            *m_session << "UPDATE blocks SET irreversible = :irreversible WHERE id = :id",
+            soci::statement st = ( m_session->prepare << "UPDATE blocks SET irreversible = :irreversible WHERE id = :id",
                     soci::use(irreversible?1:0),
-                    soci::use(block_id);
+                    soci::use(block_id) );
+            st.execute(true);
+            amount = st.get_affected_rows();
+            // wlog( "${amount}",("amount",amount) );
         } catch(std::exception e) {
             wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {
             wlog("update block irreversible failed. ${id}",("id",block_id));
         }
-
+        return amount > 0;
     }
 
 } // namespace

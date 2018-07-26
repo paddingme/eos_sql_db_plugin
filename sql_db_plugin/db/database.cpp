@@ -42,17 +42,24 @@ namespace eosio
         m_blocks_table->add(bs);
     }
 
-    void database::consume_irreversible_block_state( const chain::block_state_ptr& bs){
+    void database::consume_irreversible_block_state( const chain::block_state_ptr& bs, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition,boost::atomic<bool>& exit){
         //TODO
+        // ilog("run consume irreversible block");
         auto block_id = bs->id.str();
-        m_blocks_table->irreversible_set(block_id, true);
+        do{
+            bool update_irreversible = m_blocks_table->irreversible_set(block_id, true);
+            if(update_irreversible || exit) break;
+            else condition.wait(lock_db);
+        }while(!exit);
 
         for(auto& receipt : bs->block->transactions) {
             string trx_id_str;
             if( receipt.trx.contains<chain::packed_transaction>() ){
                 const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
 
-                if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) return ;
+                if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
+
+                // ilog("run irreversible");
 
                 m_transactions_table->add(trx);
                 for(auto actions : trx.actions){
@@ -62,6 +69,14 @@ namespace eosio
                 }  
 
                 trx_id_str = trx.id().str();
+
+                bool trace_result;
+                do{
+                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
+                    if(trace_result || exit) break;
+                    else boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+                }while((!exit));
+
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }
@@ -71,8 +86,6 @@ namespace eosio
             if(ir_trans){
                 m_transactions_table->irreversible_set(block_id, true, trx_id_str);
             }
-
-            m_traces_table->list(trx_id_str, bs->block->timestamp);
 
         }
 
@@ -98,6 +111,7 @@ namespace eosio
         //     m_actions_table->add(actions.act,tt->id, tt->elapsed, seq);
         //     seq++;
         // }
+        // ilog("run trace");
         m_traces_table->add(tt);
     }
 

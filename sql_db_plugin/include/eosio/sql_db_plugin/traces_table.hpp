@@ -22,7 +22,7 @@ class traces_table : public mysql_table {
         void drop();
         void create();
         void add( const chain::transaction_trace_ptr& );
-        void list( string, chain::block_timestamp_type );
+        bool list( string, chain::block_timestamp_type );
         auto add_data(chain::action action);
         void parse_actions( chain::action action );
         void dfs_inline_traces( vector<chain::action_trace> itc );

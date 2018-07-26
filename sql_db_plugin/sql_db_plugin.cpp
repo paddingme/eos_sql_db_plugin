@@ -66,10 +66,10 @@ namespace eosio {
 
     void sql_db_plugin_impl::applied_transaction( const chain::transaction_trace_ptr& tt ) {
         
-        // if(!(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock")){
-        //     ilog("${result}",("result",tt));
-        // }
-
+        if(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"){
+            return ;
+        }
+        // ilog("${result}",("result",tt));
         handler->push_transaction_trace(tt);
     }
 
@@ -123,21 +123,22 @@ namespace eosio {
         FC_ASSERT(chain_plug);
         auto& chain = chain_plug->chain();
 
+        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
+            my->applied_transaction(tt);
+        } ));
+
+        // my->accepted_transaction_connection.emplace(chain.accepted_transaction.connect([this](const chain::transaction_metadata_ptr& tm){
+            // my->accepted_transaction(tm);
+        // } ));
+
         my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
             my->accepted_block(bs);
         } ));
 
         my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
             my->applied_irreversible_block(bs);
-        } ));
-
-        my->accepted_transaction_connection.emplace(chain.accepted_transaction.connect([this](const chain::transaction_metadata_ptr& tm){
-            // my->accepted_transaction(tm);
-        } ));
-
-        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
-            my->applied_transaction(tt);
-        } ));
+        } ));     
+        
     }
 
     void sql_db_plugin::plugin_startup() {

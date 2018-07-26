@@ -60,7 +60,7 @@ namespace eosio {
         const auto trace_id_str = trace->id.str();
         const auto data = fc::json::to_string(trace);
         try{
-            *m_session << "INSERT INTO traces(id, data) "
+            *m_session << "REPLACE INTO traces(id, data) "
                         "VALUES (:id, :data)",
                 soci::use(trace_id_str),
                 soci::use(data);
@@ -72,7 +72,7 @@ namespace eosio {
         }
     }
 
-    void traces_table::list( std::string trace_id_str, chain::block_timestamp_type block_time){
+    bool traces_table::list( std::string trace_id_str, chain::block_timestamp_type block_time){
         std::string data;
         block_timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
         try{
@@ -86,11 +86,12 @@ namespace eosio {
 
         if(data.empty()){
             wlog( "trace data is null. ${id}",("id",trace_id_str) );
-            return ;
+            return false;
         }
         auto trace = fc::json::from_string(data).as<chain::transaction_trace>();
         // ilog("${result}",("result",trace));
         dfs_inline_traces( trace.action_traces );
+        return true;
     }
 
     void traces_table::dfs_inline_traces( vector<chain::action_trace> trace ){

@@ -13,6 +13,9 @@
 #include <eosio/sql_db_plugin/actions_table.hpp>
 #include <eosio/sql_db_plugin/traces_table.hpp>
 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
+
 namespace eosio {
 
 class database {
@@ -22,7 +25,7 @@ class database {
         void wipe();
         bool is_started();
         void consume_block_state( const chain::block_state_ptr& );
-        void consume_irreversible_block_state( const chain::block_state_ptr& );
+        void consume_irreversible_block_state( const chain::block_state_ptr&, boost::mutex::scoped_lock&, boost::condition_variable&, boost::atomic<bool>& );
 
 
         void consume_transaction_metadata( const chain::transaction_metadata_ptr& );
