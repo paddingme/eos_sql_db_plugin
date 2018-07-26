@@ -22,7 +22,7 @@ namespace eosio {
 
 class consumer final : public boost::noncopyable {
     public:
-        consumer(std::unique_ptr<database> db, size_t queue_size);
+        consumer(std::unique_ptr<database> db,std::unique_ptr<database> db2, size_t queue_size);
         ~consumer();
         void shutdown();
 
@@ -46,18 +46,21 @@ class consumer final : public boost::noncopyable {
         std::deque<chain::transaction_trace_ptr> transaction_trace_process_queue;
 
         std::unique_ptr<database> db;
+        std::unique_ptr<database> db2;
         size_t queue_size;
         boost::atomic<bool> exit{false};
         boost::thread consume_thread_run_reversible;
         boost::thread consume_thread_run_irreversible;
         boost::mutex mtx;
+        boost::mutex mtx_irreversible;
         boost::mutex mtx_db;
         boost::condition_variable condition;
 
     };
 
-    consumer::consumer(std::unique_ptr<database> db, size_t queue_size):
+    consumer::consumer(std::unique_ptr<database> db, std::unique_ptr<database> db2, size_t queue_size):
         db(std::move(db)),
+        db2(std::move(db2)),
         queue_size(queue_size),
         exit(false),
         consume_thread_run_reversible(boost::thread([&]{this->run_reversible();})),
@@ -115,7 +118,7 @@ class consumer final : public boost::noncopyable {
 
     void consumer::push_irreversible_block_state( const chain::block_state_ptr& bs ){
         try {
-            queue(mtx, condition, irreversible_block_state_queue, bs, queue_size);
+            queue(mtx_irreversible, condition, irreversible_block_state_queue, bs, queue_size);
         } catch (fc::exception& e) {
             elog("FC Exception while applied_irreversible_block ${e}", ("e", e.to_string()));
         } catch (std::exception& e) {
@@ -187,7 +190,6 @@ class consumer final : public boost::noncopyable {
                 //     ilog("draining queue, size: ${q}", ("q", transaction_metadata_size + transaction_trace_size + block_state_size + irreversible_block_state_size));
                 // }
 
-                boost::mutex::scoped_lock lock_db(mtx_db);
 
                 //process trace
                 while (!transaction_trace_process_queue.empty()) {
@@ -210,8 +212,6 @@ class consumer final : public boost::noncopyable {
                     block_state_process_queue.pop_front();
                 }
 
-                lock_db.unlock();
-
                 condition.notify_one();
             } catch (fc::exception& e) {
                 elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
@@ -230,7 +230,7 @@ class consumer final : public boost::noncopyable {
         ilog("Consumer thread Start run_irreversible");
         while (!exit) { 
             try{
-                boost::mutex::scoped_lock lock(mtx);
+                boost::mutex::scoped_lock lock(mtx_irreversible);
                 while(irreversible_block_state_queue.empty() && !exit){
                     condition.wait(lock);
                 }
@@ -244,10 +244,11 @@ class consumer final : public boost::noncopyable {
                 lock.unlock();
 
                 boost::mutex::scoped_lock lock_db(mtx_db);
+                
                 // process irreversible blocks
                 while (!irreversible_block_state_process_queue.empty()) {
                     const auto& bs = irreversible_block_state_process_queue.front();
-                    db->consume_irreversible_block_state(bs, lock_db, condition, exit);
+                    db2->consume_irreversible_block_state(bs, lock_db, condition, exit);
                     irreversible_block_state_process_queue.pop_front();
                 }
                 lock_db.unlock();

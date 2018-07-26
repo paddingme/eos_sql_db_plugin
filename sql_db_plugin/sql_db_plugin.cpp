@@ -106,6 +106,7 @@ namespace eosio {
         auto queue_size = options.at(BUFFER_SIZE_OPTION).as<uint32_t>();
 
         auto db = std::make_unique<database>(uri_str, block_num_start);
+        auto db2 = std::make_unique<database>(uri_str, block_num_start);
 
         if (!db->is_started()) {
             if (block_num_start == 0) {
@@ -114,7 +115,7 @@ namespace eosio {
             }
         }
 
-        my->handler = std::make_unique<consumer>(std::move(db),queue_size);
+        my->handler = std::make_unique<consumer>(std::move(db),std::move(db2),queue_size);
         chain_plugin* chain_plug = app().find_plugin<chain_plugin>();
         FC_ASSERT(chain_plug);
         auto& chain = chain_plug->chain();
