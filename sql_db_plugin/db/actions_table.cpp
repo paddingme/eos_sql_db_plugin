@@ -76,7 +76,7 @@ namespace eosio {
         std::string action_id = boost::uuids::to_string(id);
 
         try{
-            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount) ",
+            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount, ramaccount) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount, :ramaccount) ",
                 soci::use(action.account.to_string()),
                 soci::use(seq),
                 soci::use(expiration),
@@ -87,7 +87,8 @@ namespace eosio {
                 soci::use(dataJson.from.to_string()),
                 soci::use(dataJson.receiver.to_string()),
                 soci::use(dataJson.payer.to_string()),
-                soci::use(dataJson.name.to_string());
+                soci::use(dataJson.name.to_string()),
+                soci::use(dataJson.account.to_string());
         } catch(...) {
             wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
             wlog("${data}",("data",fc::json::to_string(action)));

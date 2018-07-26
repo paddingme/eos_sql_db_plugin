@@ -27,6 +27,7 @@ struct system_contract_arg{
     chain::account_name receiver;
     chain::account_name payer;
     chain::account_name name;
+    chain::account_name account;
 };
 
 class actions_table : public mysql_table {
@@ -50,7 +51,7 @@ class actions_table : public mysql_table {
 
 
 } // namespace
-FC_REFLECT( eosio::system_contract_arg                        , (to)(from)(receiver)(payer)(name) )
+FC_REFLECT( eosio::system_contract_arg                        , (to)(from)(receiver)(payer)(name)(account) )
 
 
 
