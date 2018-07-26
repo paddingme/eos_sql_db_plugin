@@ -107,10 +107,6 @@ namespace eosio {
 
         auto db = std::make_unique<database>(uri_str, block_num_start);
 
-        if (block_num_start == 0) {
-            ilog("Resync requested: wiping database");
-            db->wipe();
-        }
         if (!db->is_started()) {
             if (block_num_start == 0) {
                 ilog("Resync requested: wiping database");
