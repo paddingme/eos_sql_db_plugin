@@ -76,7 +76,7 @@ namespace eosio {
         std::string action_id = boost::uuids::to_string(id);
 
         try{
-            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount, ramaccount) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount, :ramaccount) ",
+            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount, sellram_account) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount, :sellram_account) ",
                 soci::use(action.account.to_string()),
                 soci::use(seq),
                 soci::use(expiration),
