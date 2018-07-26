@@ -112,15 +112,17 @@ DROP TABLE IF EXISTS `assets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `assets` (
-  `symbol_owner` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `symbol_owner` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `amount` double(64,30) DEFAULT NULL,
   `max_amount` double(64,30) DEFAULT NULL,
   `symbol_precision` int(2) DEFAULT NULL,
-  `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `issuer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  PRIMARY KEY (`symbol_owner`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+  `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `issuer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_symbol_owner` (`symbol_owner`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -158,12 +160,13 @@ DROP TABLE IF EXISTS `refunds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `refunds` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `request_time` timestamp NULL DEFAULT NULL,
   `net_amount` double(64,4) DEFAULT NULL,
   `cpu_amount` double(64,4) DEFAULT NULL,
-  PRIMARY KEY (`owner`) USING BTREE,
-  UNIQUE KEY `idx_owner` (`owner`) USING BTREE
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_owner` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -175,13 +178,14 @@ DROP TABLE IF EXISTS `stakes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `stakes` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `account` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `cpu_amount_for_self` double(64,4) DEFAULT '0.0000',
   `net_amount_for_self` double(64,4) DEFAULT '0.0000',
   `cpu_amount_for_other` double(64,4) DEFAULT '0.0000',
   `net_amount_for_other` double(64,4) DEFAULT '0.0000',
-  PRIMARY KEY (`account`) USING BTREE,
-  UNIQUE KEY `idx_stakes_account` (`account`) USING BTREE
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_stakes_account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
