@@ -71,6 +71,7 @@ CREATE TABLE `actions` (
   `receiver` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `payer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `newaccount` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `sellram_account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `idx_actions_account` (`account`),
   KEY `idx_actions_name` (`name`),
@@ -80,7 +81,8 @@ CREATE TABLE `actions` (
   KEY `idx_actions_eosfrom` (`eosfrom`),
   KEY `idx_actions_receiver` (`receiver`),
   KEY `idx_actions_payer` (`payer`),
-  KEY `idx_actions_newaccount` (`newaccount`)
+  KEY `idx_actions_newaccount` (`newaccount`),
+  KEY `idx_actions_sellram_account` (`sellram_account`)
 ) ENGINE=InnoDB AUTO_INCREMENT=292 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
