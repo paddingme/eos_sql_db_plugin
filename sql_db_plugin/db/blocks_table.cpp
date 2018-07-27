@@ -93,7 +93,7 @@ namespace eosio {
                     soci::use(block_id);
                 if(amount==0) return true;
             }
-            wlog( "${amount}",("amount",amount) );
+            // wlog( "${amount}",("amount",amount) );
         } catch(std::exception e) {
             wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {
