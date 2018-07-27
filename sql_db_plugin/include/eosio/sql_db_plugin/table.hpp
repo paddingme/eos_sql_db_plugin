@@ -14,7 +14,7 @@ class mysql_table{
         void drop();
         void create();
 
-        fc::microseconds max_serialization_time = fc::microseconds(15*1000);
+        fc::microseconds max_serialization_time = fc::microseconds(150*1000);
 
 };
 

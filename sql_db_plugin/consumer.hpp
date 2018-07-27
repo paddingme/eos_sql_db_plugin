@@ -181,14 +181,13 @@ class consumer final : public boost::noncopyable {
 
                 lock.unlock();
 
-                // if( block_state_size > (queue_size * 0.75) ||
-                //     irreversible_block_state_size > (queue_size * 0.75) ||
-                //     transaction_metadata_size > (queue_size * 0.75) ||
-                //     transaction_trace_size> (queue_size * 0.75)) {
-                //     wlog("queue size: ${q}", ("q", transaction_metadata_size + transaction_trace_size + block_state_size + irreversible_block_state_size));
-                // } else if (exit) {
-                //     ilog("draining queue, size: ${q}", ("q", transaction_metadata_size + transaction_trace_size + block_state_size + irreversible_block_state_size));
-                // }
+                if( block_state_size > (queue_size * 0.75) ||
+                    transaction_metadata_size > (queue_size * 0.75) ||
+                    transaction_trace_size> (queue_size * 0.75)) {
+                    wlog("reversible queue size: ${q}", ("q", transaction_metadata_size + transaction_trace_size + block_state_size));
+                } else if (exit) {
+                    ilog("reversible draining queue, size: ${q}", ("q", transaction_metadata_size + transaction_trace_size + block_state_size));
+                }
 
 
                 //process trace
@@ -212,7 +211,7 @@ class consumer final : public boost::noncopyable {
                     block_state_process_queue.pop_front();
                 }
 
-                condition.notify_one();
+                condition.notify_all();
             } catch (fc::exception& e) {
                 elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
             } catch (std::exception& e) {
@@ -242,6 +241,12 @@ class consumer final : public boost::noncopyable {
                 }
 
                 lock.unlock();
+
+                if( irreversible_block_state_size > (queue_size * 0.75) ) {
+                    wlog("irreversible queue size: ${q}", ("q", irreversible_block_state_size));
+                } else if (exit) {
+                    ilog("irreversible draining queue, size: ${q}", ("q", irreversible_block_state_size));
+                }
 
                 boost::mutex::scoped_lock lock_db(mtx_db);
                 

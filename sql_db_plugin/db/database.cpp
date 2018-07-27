@@ -49,7 +49,7 @@ namespace eosio
         do{
             bool update_irreversible = m_blocks_table->irreversible_set(block_id, true);
             if(update_irreversible || exit) break;
-            else condition.wait(lock_db);
+            else condition.timed_wait(lock_db, boost::posix_time::milliseconds(100));
         }while(!exit);
 
         for(auto& receipt : bs->block->transactions) {
@@ -74,7 +74,7 @@ namespace eosio
                 do{
                     trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
                     if(trace_result || exit) break;
-                    else boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+                    else condition.timed_wait(lock_db, boost::posix_time::milliseconds(100));     
                 }while((!exit));
 
             }else{
