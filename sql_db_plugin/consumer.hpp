@@ -101,7 +101,7 @@ class consumer final : public boost::noncopyable {
         }
         queue.emplace_back(e);
         lock.unlock();
-        condition.notify_one();
+        condition.notify_all();
     }
 
     void consumer::push_block_state( const chain::block_state_ptr& bs ){

@@ -87,7 +87,13 @@ namespace eosio {
                     soci::use(block_id) );
             st.execute(true);
             amount = st.get_affected_rows();
-            // wlog( "${amount}",("amount",amount) );
+            if(amount==0){
+                *m_session << "select count(*) from blocks where irreversible = 0 and id = :id ",
+                    soci::into(amount),
+                    soci::use(block_id);
+                if(amount==0) return true;
+            }
+            wlog( "${amount}",("amount",amount) );
         } catch(std::exception e) {
             wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {
