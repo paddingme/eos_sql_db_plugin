@@ -16,6 +16,14 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Create database `eos`
+--
+
+CREATE DATABASE `eos` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE eos;
+
+--
 -- Table structure for table `accounts`
 --
 
