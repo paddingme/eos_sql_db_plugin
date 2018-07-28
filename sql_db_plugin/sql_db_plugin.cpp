@@ -81,7 +81,7 @@ namespace eosio {
         dlog("set_program_options");
 
         cfg.add_options()
-                (BUFFER_SIZE_OPTION, bpo::value<uint>()->default_value(256),
+                (BUFFER_SIZE_OPTION, bpo::value<uint>()->default_value(2000),
                 "The queue size between nodeos and SQL DB plugin thread.")
                 (BLOCK_START_OPTION, bpo::value<uint32_t>()->default_value(0),
                 "The block to start sync.")
