@@ -66,7 +66,7 @@ namespace eosio {
                 soci::use(data);
                 
         } catch (std::exception e) {
-            wlog("${e}",("e",e.what()));
+            wlog( "${e} ${id} ${data}",("e",e.what())("id",trace_id_str)("data",data) );
         }catch(...){
             wlog("insert trace failed. ${id}",("id",trace_id_str));
         }
@@ -91,6 +91,16 @@ namespace eosio {
         auto trace = fc::json::from_string(data).as<chain::transaction_trace>();
         // ilog("${result}",("result",trace));
         dfs_inline_traces( trace.action_traces );
+
+        try{
+            *m_session << "DELETE FROM traces WHERE id = :id",soci::use(trace_id_str);
+        } catch(std::exception e) {
+            wlog( "data:${data}",("data",data) );
+            wlog("${e}",("e",e.what()));
+        } catch(...){
+            wlog( "data:${data}",("data",data) );
+        }
+
         return true;
     }
 
