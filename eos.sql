@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.11, for macos10.13 (x86_64)
 --
--- Host: localhost    Database: eosinfo
+-- Host: localhost    Database: eos
 -- ------------------------------------------------------
 -- Server version	8.0.11
 
