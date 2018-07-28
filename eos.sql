@@ -19,6 +19,7 @@
 -- Create database `eos`
 --
 
+DROP DATABASE IF EXISTS `eos`;
 CREATE DATABASE `eos` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE eos;
@@ -122,9 +123,9 @@ DROP TABLE IF EXISTS `assets`;
 CREATE TABLE `assets` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `symbol_owner` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `amount` double(64,30) NOT NULL DEFAULT '0.0000',
-  `max_amount` double(64,30) NOT NULL DEFAULT '0.0000',
-  `symbol_precision` int(11) NOT NULL DEFAULT '0.0000',
+  `amount` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `max_amount` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `symbol_precision` int(11) NOT NULL DEFAULT '0',
   `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `issuer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
@@ -171,8 +172,8 @@ CREATE TABLE `refunds` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `request_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `net_amount` double(64,4) NOT NULL DEFAULT '0.0000',
-  `cpu_amount` double(64,4) NOT NULL DEFAULT '0.0000',
+  `net_amount` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `cpu_amount` double(64,8) NOT NULL DEFAULT '0.00000000',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_refunds_owner` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -188,10 +189,10 @@ DROP TABLE IF EXISTS `stakes`;
 CREATE TABLE `stakes` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `cpu_amount_for_self` double(64,4) DEFAULT '0.0000',
-  `net_amount_for_self` double(64,4) DEFAULT '0.0000',
-  `cpu_amount_for_other` double(64,4) DEFAULT '0.0000',
-  `net_amount_for_other` double(64,4) DEFAULT '0.0000',
+  `cpu_amount_for_self` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `net_amount_for_self` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `cpu_amount_for_other` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `net_amount_for_other` double(64,8) NOT NULL DEFAULT '0.00000000',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_stakes_account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -208,7 +209,7 @@ CREATE TABLE `tokens` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `amount` double(64,4) NOT NULL DEFAULT '0.0000',
+  `amount` double(64,8) NOT NULL DEFAULT '0.00000000',
   `symbol_owner` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `symbol_owner_account` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
