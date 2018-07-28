@@ -146,9 +146,9 @@ CREATE TABLE `blocks` (
   `num_transactions` int(11) NOT NULL DEFAULT '0',
   `confirmed` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_block_number` (`idx_block_number`),
+  UNIQUE KEY `idx_block_number` (`block_number`),
   KEY `idx_blocks_producer` (`producer`),
-  KEY `idx_blocks_number` (`block_number`)
+  KEY `idx_prev_block_id` (`prev_block_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
