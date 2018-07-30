@@ -142,8 +142,9 @@ DROP TABLE IF EXISTS `blocks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `blocks` (
-  `id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `block_number` int(11) NOT NULL AUTO_INCREMENT,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `block_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `block_number` bigint(20) NOT NULL DEFAULT '0',
   `prev_block_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `irreversible` tinyint(1) NOT NULL DEFAULT '0',
   `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -155,7 +156,7 @@ CREATE TABLE `blocks` (
   `num_transactions` int(11) NOT NULL DEFAULT '0',
   `confirmed` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_block_number` (`block_number`),
+  UNIQUE KEY `idx_block_id` (`block_id`),
   KEY `idx_blocks_producer` (`producer`),
   KEY `idx_prev_block_id` (`prev_block_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
