@@ -42,7 +42,7 @@ namespace eosio {
 
     }
 
-    void transactions_table::add( chain::transaction transaction) {
+    void transactions_table::add( chain::transaction transaction ) {
         const auto transaction_id_str = transaction.id().str();
         const auto expiration = std::chrono::seconds{transaction.expiration.sec_since_epoch()}.count();
         try{

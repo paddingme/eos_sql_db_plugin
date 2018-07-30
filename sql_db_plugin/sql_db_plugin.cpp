@@ -45,17 +45,21 @@ namespace eosio {
     };
 
     void sql_db_plugin_impl::accepted_block( const chain::block_state_ptr& bs ) {
-        // if(bs->trxs.size()!=0){
-        //     for(auto& trx : bs->trxs){
-        //         ilog("${result}",("result",trx->trx));
-        //     }
-        // }
+        if(bs->trxs.size()!=0){
+            ilog("trx.size ${size}",("size",bs->trxs.size()));
+            // for(auto& trx : bs->trxs){
+            //     ilog("${result}",("result",trx->trx));
+            // }
+        }
         handler->push_block_state(bs);
     }
 
     void sql_db_plugin_impl::applied_irreversible_block( const chain::block_state_ptr& bs) {
         // for(auto& transaction : bs->block->transactions){
         //     ilog("${result}",("result",fc::json::to_string(fc::raw::unpack<chain::transaction>(transaction.trx.get<chain::packed_transaction>().get_raw_transaction()))));
+        // }
+        // if(bs->trxs.size()!=0){
+        //     ilog("trx.size ${size}",("size",bs->trxs.size()));
         // }
         handler->push_irreversible_block_state(bs);
     }
@@ -81,7 +85,7 @@ namespace eosio {
         dlog("set_program_options");
 
         cfg.add_options()
-                (BUFFER_SIZE_OPTION, bpo::value<uint>()->default_value(2000),
+                (BUFFER_SIZE_OPTION, bpo::value<uint>()->default_value(5000),
                 "The queue size between nodeos and SQL DB plugin thread.")
                 (BLOCK_START_OPTION, bpo::value<uint32_t>()->default_value(0),
                 "The block to start sync.")
@@ -105,32 +109,36 @@ namespace eosio {
         uint32_t block_num_start = options.at(BLOCK_START_OPTION).as<uint32_t>();
         auto queue_size = options.at(BUFFER_SIZE_OPTION).as<uint32_t>();
 
-        auto db = std::make_unique<database>(uri_str, block_num_start);
-        auto db2 = std::make_unique<database>(uri_str, block_num_start);
+        ilog("queue size ${size}",("size",queue_size));
 
-        if (!db->is_started()) {
+        //for three thread。 TODO: change to thread db pool
+        auto db_blocks = std::make_unique<database>(uri_str, block_num_start);
+        auto db_traces = std::make_unique<database>(uri_str, block_num_start);
+        auto db_irreversible = std::make_unique<database>(uri_str, block_num_start);
+
+        if (!db_blocks->is_started()) {
             if (block_num_start == 0) {
                 ilog("Resync requested: wiping database");
-                db->wipe();
+                db_blocks->wipe();
             }
         }
 
-        my->handler = std::make_unique<consumer>(std::move(db),std::move(db2),queue_size);
+        my->handler = std::make_unique<consumer>(std::move(db_blocks),std::move(db_traces),std::move(db_irreversible),queue_size);
         chain_plugin* chain_plug = app().find_plugin<chain_plugin>();
         FC_ASSERT(chain_plug);
         auto& chain = chain_plug->chain();
 
-        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
-            my->applied_transaction(tt);
-        } ));
+        // my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
+        //     my->applied_transaction(tt);
+        // } ));
 
         // my->accepted_transaction_connection.emplace(chain.accepted_transaction.connect([this](const chain::transaction_metadata_ptr& tm){
             // my->accepted_transaction(tm);
         // } ));
 
-        my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
-            my->accepted_block(bs);
-        } ));
+        // my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
+        //     my->accepted_block(bs);
+        // } ));
 
         my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
             my->applied_irreversible_block(bs);

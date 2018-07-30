@@ -46,11 +46,11 @@ namespace eosio
         //TODO
         // ilog("run consume irreversible block");
         auto block_id = bs->id.str();
-        do{
-            bool update_irreversible = m_blocks_table->irreversible_set(block_id, true);
-            if(update_irreversible || exit) break;
-            else condition.timed_wait(lock_db, boost::posix_time::milliseconds(100));
-        }while(!exit);
+        // do{
+        //     bool update_irreversible = m_blocks_table->irreversible_set(block_id, true);
+        //     if(update_irreversible || exit) break;
+        //     else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));
+        // }while(!exit);
 
         for(auto& receipt : bs->block->transactions) {
             string trx_id_str;
@@ -68,24 +68,24 @@ namespace eosio
                     seq++;
                 }  
 
-                trx_id_str = trx.id().str();
+                // trx_id_str = trx.id().str();
 
-                bool trace_result;
-                do{
-                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
-                    if(trace_result || exit) break;
-                    else condition.timed_wait(lock_db, boost::posix_time::milliseconds(100));     
-                }while((!exit));
+                // bool trace_result;
+                // do{
+                //     trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
+                //     if(trace_result || exit) break;
+                //     else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+                // }while((!exit));
 
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }
 
-            auto ir_trans = m_transactions_table->find_transaction(trx_id_str);
+            // auto ir_trans = m_transactions_table->find_transaction(trx_id_str);
 
-            if(ir_trans){
-                m_transactions_table->irreversible_set(block_id, true, trx_id_str);
-            }
+            // if(ir_trans){
+            //     m_transactions_table->irreversible_set(block_id, true, trx_id_str);
+            // }
 
         }
 
