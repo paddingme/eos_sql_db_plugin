@@ -53,7 +53,7 @@ namespace eosio {
 
 
         try{
-            *m_session << "REPLACE INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
+            *m_session << "REPLACE INTO blocks(block_id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
                 "producer, version, confirmed, num_transactions) VALUES (:id, :in, :pb, FROM_UNIXTIME(:ti), :tr, :ar, :pa, :ve, :pe, :nt)",
                 soci::use(block_id_str),
                 soci::use(block->block_num()),
@@ -68,7 +68,7 @@ namespace eosio {
 
             if (block->new_producers) {
                 const auto new_producers = fc::json::to_string(block->new_producers->producers);
-                *m_session << "UPDATE blocks SET new_producers = :np WHERE id = :id",
+                *m_session << "UPDATE blocks SET new_producers = :np WHERE block_id = :id",
                         soci::use(new_producers),
                         soci::use(block_id_str);
             }
@@ -82,13 +82,13 @@ namespace eosio {
     bool blocks_table::irreversible_set( std::string block_id, bool irreversible ){
         int amount = 0;
         try{
-            soci::statement st = ( m_session->prepare << "UPDATE blocks SET irreversible = :irreversible WHERE id = :id",
+            soci::statement st = ( m_session->prepare << "UPDATE blocks SET irreversible = :irreversible WHERE block_id = :id",
                     soci::use(irreversible?1:0),
                     soci::use(block_id) );
             st.execute(true);
             amount = st.get_affected_rows();
             if(amount==0){
-                *m_session << "select count(*) from blocks where irreversible = 0 and id = :id ",
+                *m_session << "select count(*) from blocks where irreversible = 0 and block_id = :id ",
                     soci::into(amount),
                     soci::use(block_id);
                 if(amount==0) return true;
