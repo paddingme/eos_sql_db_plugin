@@ -69,7 +69,7 @@ class consumer final : public boost::noncopyable {
         queue_size(queue_size),
         exit(false),
         // consume_thread_run_blocks(boost::thread([&]{this->run_blocks();})),
-        // consume_thread_run_traces(boost::thread([&]{this->run_traces();})),
+        consume_thread_run_traces(boost::thread([&]{this->run_traces();})),
         consume_thread_run_irreversible(boost::thread([&]{this->run_irreversible();}))
         { }
 

@@ -12,11 +12,13 @@
 #include <fc/utf8.hpp>
 #include <fc/variant.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 namespace {
 const char* BLOCK_START_OPTION = "sql_db-block-start";
 const char* BUFFER_SIZE_OPTION = "sql_db-queue-size";
 const char* SQL_DB_URI_OPTION = "sql_db-uri";
-const char* REBUILD_DATABASE = "rebuild-database";
+const char* SQL_DB_ACTION_FILTER_ON = "sql_db-action-filter-on";
 }
 
 namespace fc { class variant; }
@@ -92,12 +94,22 @@ namespace eosio {
                 (SQL_DB_URI_OPTION, bpo::value<std::string>(),
                 "Sql DB URI connection string"
                 " If not specified then plugin is disabled. Default database 'EOS' is used if not specified in URI.")
-                (REBUILD_DATABASE,bpo::bool_switch()->default_value(false),"")
+                (SQL_DB_ACTION_FILTER_ON,bpo::value<std::string>(),
+                "saved action without filter out")
                 ;
     }
 
     void sql_db_plugin::plugin_initialize(const variables_map& options) {
         ilog("initialize");
+
+        std::vector<std::string> action_filter_on;
+        if( options.count( SQL_DB_ACTION_FILTER_ON ) ){
+            auto fo = options.at(SQL_DB_ACTION_FILTER_ON).as<std::string>();
+            boost::replace_all(fo," ","");
+            boost::split(action_filter_on, fo,  boost::is_any_of( "," ));
+            ilog("${string} ${size}",("string",fo)("size",action_filter_on.size()));
+
+        }
 
         std::string uri_str = options.at(SQL_DB_URI_OPTION).as<std::string>();
         if (uri_str.empty()){
@@ -114,7 +126,7 @@ namespace eosio {
         //for three thread。 TODO: change to thread db pool
         auto db_blocks = std::make_unique<database>(uri_str, block_num_start);
         auto db_traces = std::make_unique<database>(uri_str, block_num_start);
-        auto db_irreversible = std::make_unique<database>(uri_str, block_num_start);
+        auto db_irreversible = std::make_unique<database>(uri_str, block_num_start, action_filter_on);
 
         if (!db_blocks->is_started()) {
             if (block_num_start == 0) {
@@ -128,9 +140,9 @@ namespace eosio {
         FC_ASSERT(chain_plug);
         auto& chain = chain_plug->chain();
 
-        // my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
-        //     my->applied_transaction(tt);
-        // } ));
+        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
+            my->applied_transaction(tt);
+        } ));
 
         // my->accepted_transaction_connection.emplace(chain.accepted_transaction.connect([this](const chain::transaction_metadata_ptr& tm){
             // my->accepted_transaction(tm);

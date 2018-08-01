@@ -11,8 +11,6 @@ namespace eosio{
 
 class mysql_table{
     public:
-        void drop();
-        void create();
 
         fc::microseconds max_serialization_time = fc::microseconds(150*1000);
 

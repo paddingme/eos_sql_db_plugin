@@ -15,18 +15,12 @@ namespace eosio
         system_account = chain::name(chain::config::system_account_name).to_string();
     }
 
-    void database::wipe() {
-        // m_actions_table->drop();
-        // m_transactions_table->drop();
-        // m_traces_table->drop();
-        // m_blocks_table->drop();
-        // m_accounts_table->drop();
+    database::database(const std::string &uri, uint32_t block_num_start, std::vector<string> filter_out) {
+        new (this)database(uri,block_num_start);
+        m_action_filter_on = filter_out;
+    }
 
-        // m_transactions_table->create();
-        // m_traces_table->create();
-        // m_actions_table->create();
-        // m_accounts_table->create();
-        // m_blocks_table->create();
+    void database::wipe() {
         chain::abi_def abi_def;
         abi_def = eosio_contract_abi(abi_def);
         m_accounts_table->add_eosio(system_account, fc::json::to_string( abi_def ));
@@ -59,33 +53,24 @@ namespace eosio
 
                 if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
 
-                // ilog("run irreversible");
-
-                m_transactions_table->add(trx);
+                // ilog("run irreversible ${result}",("result",m_action_filter_on.size()));
+                // m_transactions_table->add(trx);
                 for(auto actions : trx.actions){
-                    uint8_t seq = 0;
-                    m_actions_table->add(actions,trx.id(), trx.expiration, seq);
-                    seq++;
+                    m_actions_table->add(actions,trx.id(), trx.expiration, m_action_filter_on);
                 }  
 
-                // trx_id_str = trx.id().str();
+                trx_id_str = trx.id().str();
 
-                // bool trace_result;
-                // do{
-                //     trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
-                //     if(trace_result || exit) break;
-                //     else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
-                // }while((!exit));
+                bool trace_result;
+                do{
+                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
+                    if(trace_result || exit) break;
+                    else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+                }while((!exit));
 
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }
-
-            // auto ir_trans = m_transactions_table->find_transaction(trx_id_str);
-
-            // if(ir_trans){
-            //     m_transactions_table->irreversible_set(block_id, true, trx_id_str);
-            // }
 
         }
 
@@ -97,21 +82,12 @@ namespace eosio
 
         m_transactions_table->add(tm->trx);
         for(auto actions : tm->trx.actions){
-            uint8_t seq = 0;
-            m_actions_table->add(actions,tm->trx.id(), tm->trx.expiration, seq);
-            seq++;
+            m_actions_table->add(actions,tm->trx.id(), tm->trx.expiration, m_action_filter_on);
         }
 
     }
 
     void database::consume_transaction_trace( const chain::transaction_trace_ptr& tt) {
-        // ilog("${data}",("data",fc::json::to_string(*tt)));
-        // for(auto actions : tt->action_traces){
-        //     uint8_t seq = 0;
-        //     m_actions_table->add(actions.act,tt->id, tt->elapsed, seq);
-        //     seq++;
-        // }
-        // ilog("run trace");
         m_traces_table->add(tt);
     }
 

@@ -21,6 +21,7 @@ namespace eosio {
 class database {
     public:
         database(const std::string& uri, uint32_t block_num_start);
+        database(const std::string& uri, uint32_t block_num_start, std::vector<std::string>);
         
         void wipe();
         bool is_started();
@@ -47,6 +48,7 @@ class database {
         std::unique_ptr<traces_table> m_traces_table;
         std::string system_account;
         uint32_t m_block_num_start;
+        std::vector<std::string> m_action_filter_on;
     };
 
 } // namespace

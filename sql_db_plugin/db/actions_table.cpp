@@ -8,55 +8,7 @@ namespace eosio {
 
     }
 
-    void actions_table::drop() {
-        try {
-            *m_session << "drop table IF EXISTS actions_accounts";
-            *m_session << "drop table IF EXISTS actions";
-        }catch(std::exception& e) {
-            wlog(e.what());
-        }
-    }
-
-    void actions_table::create() {
-        *m_session << "CREATE TABLE `actions` ("
-                        "`id` bigint(20) NOT NULL AUTO_INCREMENT,"
-                        "`account` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`transaction_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`seq` smallint(6) NOT NULL DEFAULT 0,"
-                        "`parent` bigint(20) NOT NULL DEFAULT 0,"
-                        "`name` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,"
-                        "`data` json DEFAULT NULL,"
-                        "`eosto` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`eosfrom` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`receiver` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`payer` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`newaccount` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "PRIMARY KEY (`id`),"
-                        "KEY `idx_actions_account` (`account`),"
-                        "KEY `idx_actions_name` (`name`),"
-                        "KEY `idx_actions_tx_id` (`transaction_id`),"
-                        "KEY `idx_actions_created` (`created_at`),"
-                        "KEY `idx_actions_eosto` (`eosto`),"
-                        "KEY `idx_actions_eosfrom` (`eosfrom`),"
-                        "KEY `idx_actions_receiver` (`receiver`),"
-                        "KEY `idx_actions_payer` (`payer`),"
-                        "KEY `idx_actions_newaccount` (`newaccount`)"
-                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
-
-        *m_session << "CREATE TABLE `actions_accounts` ("
-                        "`id` bigint(20) NOT NULL AUTO_INCREMENT,"
-                        "`actor` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`permission` varchar(16) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',"
-                        "`action_id` bigint(20) NOT NULL DEFAULT 0,"
-                        "PRIMARY KEY (`id`),"
-                        "KEY `idx_actions_actor` (`actor`),"
-                        "KEY `idx_actions_action_id` (`action_id`)"
-                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
-
-    }
-
-    void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq) {
+    void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, std::vector<std::string> filter_out) {
 
         if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
 
@@ -69,35 +21,29 @@ namespace eosio {
 
         string json = add_data(action);
         system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
+        string json_auth = fc::json::to_string(action.authorization);
         // ilog("${to} , ${from} , ${receiver} , ${name}",("to",dataJson.to.to_string())("from",dataJson.from.to_string())("receiver",dataJson.receiver.to_string())("name",dataJson.name.to_string()) );
 
-        boost::uuids::random_generator gen;
-        boost::uuids::uuid id = gen();
-        std::string action_id = boost::uuids::to_string(id);
-
-        try{
-            *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id, eosto, eosfrom, receiver, payer, newaccount, sellram_account) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti, :to, :form, :receiver, :payer, :newaccount, :sellram_account) ",
-                soci::use(action.account.to_string()),
-                soci::use(seq),
-                soci::use(expiration),
-                soci::use(action.name.to_string()),
-                soci::use(json),
-                soci::use(transaction_id_str),
-                soci::use(dataJson.to.to_string()),
-                soci::use(dataJson.from.to_string()),
-                soci::use(dataJson.receiver.to_string()),
-                soci::use(dataJson.payer.to_string()),
-                soci::use(dataJson.name.to_string()),
-                soci::use(dataJson.account.to_string());
-        } catch(...) {
-            wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
-            wlog("${data}",("data",fc::json::to_string(action)));
-        }
-
-        for (const auto& auth : action.authorization) {
-            *m_session << "INSERT INTO actions_accounts(action_id, actor, permission) VALUES (LAST_INSERT_ID(), :ac, :pe) ",
-                    soci::use(auth.actor.to_string()),
-                    soci::use(auth.permission.to_string());
+        if( std::find(filter_out.begin(), filter_out.end(), action.name.to_string())!=filter_out.end() ){
+            try{
+                *m_session << "INSERT INTO actions(account, created_at, name, data, authorization, transaction_id, eosto, eosfrom, receiver, payer, newaccount, sellram_account) "
+                                "VALUES (:ac, FROM_UNIXTIME(:ca), :na, :da, :auth, :ti, :to, :form, :receiver, :payer, :newaccount, :sellram_account) ",
+                    soci::use(action.account.to_string()),
+                    soci::use(expiration),
+                    soci::use(action.name.to_string()),
+                    soci::use(json),
+                    soci::use(json_auth),
+                    soci::use(transaction_id_str),
+                    soci::use(dataJson.to.to_string()),
+                    soci::use(dataJson.from.to_string()),
+                    soci::use(dataJson.receiver.to_string()),
+                    soci::use(dataJson.payer.to_string()),
+                    soci::use(dataJson.name.to_string()),
+                    soci::use(dataJson.account.to_string());
+            } catch(...) {
+                wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
+                wlog("${data}",("data",fc::json::to_string(action)));
+            }
         }
 
         try {
