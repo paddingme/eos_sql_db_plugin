@@ -19,6 +19,7 @@ const char* BLOCK_START_OPTION = "sql_db-block-start";
 const char* BUFFER_SIZE_OPTION = "sql_db-queue-size";
 const char* SQL_DB_URI_OPTION = "sql_db-uri";
 const char* SQL_DB_ACTION_FILTER_ON = "sql_db-action-filter-on";
+const char* SQL_DB_CONTRACT_FILTER_OUT = "sql_db-contract-filter-out";
 }
 
 namespace fc { class variant; }
@@ -33,16 +34,26 @@ namespace eosio {
             ~sql_db_plugin_impl(){};
 
             std::unique_ptr<consumer> handler;
+            std::vector<std::string> contract_filter_out;
 
             fc::optional<boost::signals2::scoped_connection> accepted_block_connection;
             fc::optional<boost::signals2::scoped_connection> irreversible_block_connection;
+            fc::optional<boost::signals2::scoped_connection> irreversible_block_for_traces_connection;
             fc::optional<boost::signals2::scoped_connection> accepted_transaction_connection;
             fc::optional<boost::signals2::scoped_connection> applied_transaction_connection;
 
             void accepted_block( const chain::block_state_ptr& );
             void applied_irreversible_block( const chain::block_state_ptr& );
+            void applied_irreversible_block_for_traces( const chain::block_state_ptr& );
             void accepted_transaction( const chain::transaction_metadata_ptr& );
             void applied_transaction( const chain::transaction_trace_ptr& );
+
+            bool filter_out_contract( std::string contract) {
+                if( std::find(contract_filter_out.begin(),contract_filter_out.end(),contract) != contract_filter_out.end() ){
+                    return true;
+                }
+                return false;
+            }
 
     };
 
@@ -66,16 +77,53 @@ namespace eosio {
         handler->push_irreversible_block_state(bs);
     }
 
+    void sql_db_plugin_impl::applied_irreversible_block_for_traces( const chain::block_state_ptr& bs) {
+        for(auto& receipt : bs->block->transactions){
+            string trx_id_str;
+            if( receipt.trx.contains<chain::packed_transaction>() ){
+                const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
+                
+                //filter out system timer action
+                if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
+
+                //filter out attack contract
+                bool attack_check = true;
+                for(auto& action : trx.actions ){
+                    if(!filter_out_contract(action.account.to_string()) ){
+                        attack_check = false;
+                    }
+                }
+                
+                if(attack_check) continue;
+
+                trx_id_str = trx.id().str();
+                tx_id_block_time traces_params{trx_id_str,bs->block->timestamp};
+                handler->push_irreversible_block_for_traces_state( traces_params );
+            }
+        }
+
+    }
+
     void sql_db_plugin_impl::accepted_transaction( const chain::transaction_metadata_ptr& tm ) {
         handler->push_transaction_metadata(tm);
     }
 
     void sql_db_plugin_impl::applied_transaction( const chain::transaction_trace_ptr& tt ) {
-        
+        //filter out system timer action
         if(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"){
             return ;
         }
-        // ilog("${result}",("result",tt));
+
+        //filter out attack contract
+        bool attack_check = true;
+        for(auto& action_trace : tt->action_traces ){
+            if(!filter_out_contract(action_trace.act.account.to_string()) ){
+                attack_check = false;
+            }
+        }
+        
+        if(attack_check) return;
+
         handler->push_transaction_trace(tt);
     }
 
@@ -95,6 +143,8 @@ namespace eosio {
                 "Sql DB URI connection string"
                 " If not specified then plugin is disabled. Default database 'EOS' is used if not specified in URI.")
                 (SQL_DB_ACTION_FILTER_ON,bpo::value<std::string>(),
+                "saved action with filter on")
+                (SQL_DB_CONTRACT_FILTER_OUT,bpo::value<std::string>(),
                 "saved action without filter out")
                 ;
     }
@@ -108,7 +158,13 @@ namespace eosio {
             boost::replace_all(fo," ","");
             boost::split(action_filter_on, fo,  boost::is_any_of( "," ));
             ilog("${string} ${size}",("string",fo)("size",action_filter_on.size()));
+        }
 
+        if( options.count( SQL_DB_CONTRACT_FILTER_OUT ) ){
+            auto fo = options.at(SQL_DB_CONTRACT_FILTER_OUT).as<std::string>();
+            boost::replace_all(fo," ","");
+            boost::split(my->contract_filter_out, fo,  boost::is_any_of( "," ));
+            ilog("${string} ${size}",("string",fo)("size",my->contract_filter_out.size()));
         }
 
         std::string uri_str = options.at(SQL_DB_URI_OPTION).as<std::string>();
@@ -151,6 +207,10 @@ namespace eosio {
         // my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
         //     my->accepted_block(bs);
         // } ));
+
+        my->irreversible_block_for_traces_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
+            my->applied_irreversible_block_for_traces(bs);
+        } ));     
 
         my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
             my->applied_irreversible_block(bs);

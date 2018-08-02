@@ -8,7 +8,7 @@ namespace eosio {
 
     }
 
-    void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, std::vector<std::string> filter_out) {
+    void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, chain::block_timestamp_type block_time, std::vector<std::string> filter_out) {
 
         if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
 
@@ -17,7 +17,7 @@ namespace eosio {
         chain::abi_serializer abis;
         soci::indicator ind;
         const auto transaction_id_str = transaction_id.str();
-        const auto expiration = boost::chrono::seconds{transaction_time.sec_since_epoch()}.count();
+        const auto timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
 
         string json = add_data(action);
         system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
@@ -29,7 +29,7 @@ namespace eosio {
                 *m_session << "INSERT INTO actions(account, created_at, name, data, authorization, transaction_id, eosto, eosfrom, receiver, payer, newaccount, sellram_account) "
                                 "VALUES (:ac, FROM_UNIXTIME(:ca), :na, :da, :auth, :ti, :to, :form, :receiver, :payer, :newaccount, :sellram_account) ",
                     soci::use(action.account.to_string()),
-                    soci::use(expiration),
+                    soci::use(timestamp),
                     soci::use(action.name.to_string()),
                     soci::use(json),
                     soci::use(json_auth),

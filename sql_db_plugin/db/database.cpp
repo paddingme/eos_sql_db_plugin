@@ -36,7 +36,7 @@ namespace eosio
         m_blocks_table->add(bs);
     }
 
-    void database::consume_irreversible_block_state( const chain::block_state_ptr& bs, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition,boost::atomic<bool>& exit){
+    void database::consume_irreversible_block_state( const chain::block_state_ptr& bs ){
         //TODO
         // ilog("run consume irreversible block");
         auto block_id = bs->id.str();
@@ -56,17 +56,8 @@ namespace eosio
                 // ilog("run irreversible ${result}",("result",m_action_filter_on.size()));
                 // m_transactions_table->add(trx);
                 for(auto actions : trx.actions){
-                    m_actions_table->add(actions,trx.id(), trx.expiration, m_action_filter_on);
+                    m_actions_table->add(actions,trx.id(), bs->block->timestamp, m_action_filter_on);
                 }  
-
-                trx_id_str = trx.id().str();
-
-                bool trace_result;
-                do{
-                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
-                    if(trace_result || exit) break;
-                    else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
-                }while((!exit));
 
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
@@ -76,9 +67,18 @@ namespace eosio
 
     }
 
+    void database::consume_irreversible_block_for_traces_state( const tx_id_block_time& traces_params, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition, boost::atomic<bool>& exit ){
+        bool trace_result;
+        do{
+            trace_result = m_traces_table->list(traces_params.tx_id, traces_params.block_time);
+            if(trace_result || exit) break;
+            else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+        }while((!exit));
+    }
+
     void database::consume_transaction_metadata( const chain::transaction_metadata_ptr& tm ) {
 
-        if(tm->trx.actions.size()==1 && tm->trx.actions[0].name.to_string() == "onblock" ) return ;
+        // if(tm->trx.actions.size()==1 && tm->trx.actions[0].name.to_string() == "onblock" ) return ;
 
         m_transactions_table->add(tm->trx);
         for(auto actions : tm->trx.actions){

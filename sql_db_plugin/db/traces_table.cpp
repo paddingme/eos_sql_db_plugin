@@ -132,28 +132,28 @@ namespace eosio {
                         if(!transfer){
                             *m_session << "UPDATE refunds SET net_amount = ( CASE WHEN net_amount < :na THEN 0 ELSE net_amount - :na END ), "
                                 "cpu_amount = ( CASE WHEN cpu_amount < :ca THEN 0 ELSE cpu_amount - :ca END) WHERE owner = :ow ",
-                                soci::use(stake_net_quantity.to_real()),
-                                soci::use(stake_net_quantity.to_real()),
-                                soci::use(stake_cpu_quantity.to_real()),
-                                soci::use(stake_cpu_quantity.to_real()),
+                                soci::use(stake_net_quantity.get_amount()),
+                                soci::use(stake_net_quantity.get_amount()),
+                                soci::use(stake_cpu_quantity.get_amount()),
+                                soci::use(stake_cpu_quantity.get_amount()),
                                 soci::use(receiver);
                         }
 
                         *m_session << "INSERT INTO stakes ( account, net_amount_by_self, cpu_amount_by_self, net_amount_by_other,cpu_amount_by_other )  VALUES( :ac, :nam, :cam, 0, 0 ) "
                             "on  DUPLICATE key UPDATE net_amount_by_self = net_amount_by_self +  :nam, cpu_amount_by_self = cpu_amount_by_self + :cam ",
                             soci::use(receiver),
-                            soci::use(stake_net_quantity.to_real()),
-                            soci::use(stake_cpu_quantity.to_real()),
-                            soci::use(stake_net_quantity.to_real()),
-                            soci::use(stake_cpu_quantity.to_real());
+                            soci::use(stake_net_quantity.get_amount()),
+                            soci::use(stake_cpu_quantity.get_amount()),
+                            soci::use(stake_net_quantity.get_amount()),
+                            soci::use(stake_cpu_quantity.get_amount());
                     }else{
                         *m_session << "INSERT INTO stakes ( account, net_amount_by_self, cpu_amount_by_self, net_amount_by_other, cpu_amount_by_other )  VALUES( :ac, 0, 0, :nam, :cam ) "
                             "on  DUPLICATE key UPDATE net_amount_by_other = net_amount_by_other +  :nam, cpu_amount_by_other = cpu_amount_by_other + :cam ",
                             soci::use(receiver),
-                            soci::use(stake_net_quantity.to_real()),
-                            soci::use(stake_cpu_quantity.to_real()),
-                            soci::use(stake_net_quantity.to_real()),
-                            soci::use(stake_cpu_quantity.to_real());
+                            soci::use(stake_net_quantity.get_amount()),
+                            soci::use(stake_cpu_quantity.get_amount()),
+                            soci::use(stake_net_quantity.get_amount()),
+                            soci::use(stake_cpu_quantity.get_amount());
                     }
 
                 } catch(std::exception e) {
@@ -175,18 +175,18 @@ namespace eosio {
                         *m_session << "INSERT INTO stakes ( account, net_amount_by_self, cpu_amount_by_self, net_amount_by_other, cpu_amount_by_other )  VALUES( :ac, :nam, :cam, 0, 0 ) "
                             "on  DUPLICATE key UPDATE net_amount_by_self = net_amount_by_self +  :nam, cpu_amount_by_self = cpu_amount_by_self + :cam ",
                             soci::use(receiver),
-                            soci::use(unstake_net_quantity.to_real()),
-                            soci::use(unstake_cpu_quantity.to_real()),
-                            soci::use(unstake_net_quantity.to_real()),
-                            soci::use(unstake_cpu_quantity.to_real());
+                            soci::use(unstake_net_quantity.get_amount()),
+                            soci::use(unstake_cpu_quantity.get_amount()),
+                            soci::use(unstake_net_quantity.get_amount()),
+                            soci::use(unstake_cpu_quantity.get_amount());
                     }else{
                         *m_session << "INSERT INTO stakes ( account, net_amount_by_self, cpu_amount_by_self, net_amount_by_other, cpu_amount_by_other )  VALUES( :ac, 0, 0, :nam, :cam ) "
                             "on  DUPLICATE key UPDATE net_amount_by_other = net_amount_by_other +  :nam, cpu_amount_by_other = cpu_amount_by_other + :cam ",
                             soci::use(receiver),
-                            soci::use(unstake_net_quantity.to_real()),
-                            soci::use(unstake_cpu_quantity.to_real()),
-                            soci::use(unstake_net_quantity.to_real()),
-                            soci::use(unstake_cpu_quantity.to_real());
+                            soci::use(unstake_net_quantity.get_amount()),
+                            soci::use(unstake_cpu_quantity.get_amount()),
+                            soci::use(unstake_net_quantity.get_amount()),
+                            soci::use(unstake_cpu_quantity.get_amount());
                     }
                     // ilog( "blocktime::" );
                     // ilog( "${bt}",("bt",block_timestamp) );
@@ -194,11 +194,11 @@ namespace eosio {
                             "on  DUPLICATE key UPDATE request_time = FROM_UNIXTIME(:rt), net_amount = net_amount +  :nam, cpu_amount = cpu_amount + :cam ",
                             soci::use(from),
                             soci::use(block_timestamp),
-                            soci::use((-unstake_net_quantity).to_real()),
-                            soci::use((-unstake_cpu_quantity).to_real()),
+                            soci::use((-unstake_net_quantity).get_amount()),
+                            soci::use((-unstake_cpu_quantity).get_amount()),
                             soci::use(block_timestamp),
-                            soci::use((-unstake_net_quantity).to_real()),
-                            soci::use((-unstake_cpu_quantity).to_real());
+                            soci::use((-unstake_net_quantity).get_amount()),
+                            soci::use((-unstake_cpu_quantity).get_amount());
 
                 } catch(std::exception e) {
                     wlog("${e}",("e",e.what()));
@@ -231,13 +231,15 @@ namespace eosio {
                     insertassets = "INSERT assets(supply, max_supply, symbol_precision, symbol,  issuer, contract_owner) VALUES( :am, :mam, :pre, :sym, :issuer, :owner)";
                     *m_session << insertassets,
                             soci::use( 0 ),
-                            soci::use( maximum_supply.to_real() ),
-                            soci::use( maximum_supply.precision() ),
+                            soci::use( maximum_supply.get_amount() ),
+                            soci::use( maximum_supply.decimals() ),
                             soci::use( maximum_supply.get_symbol().name() ),
                             soci::use( issuer ),
                             soci::use( action.account.to_string() );
                 } catch(std::exception e) {
                     wlog("${e}",("e",e.what()));
+                    wlog("${sql}",("sql",insertassets) );
+                    wlog( "create asset failed. ${issuer} ${maximum_supply}",("issuer",issuer)("maximum_supply",maximum_supply) );
                 } catch (...) {
                     wlog("${sql}",("sql",insertassets) );
                     wlog( "create asset failed. ${issuer} ${maximum_supply}",("issuer",issuer)("maximum_supply",maximum_supply) );
@@ -252,7 +254,7 @@ namespace eosio {
                 try{
                     //update asset issue amount
                     *m_session << "UPDATE assets SET supply = supply + :am WHERE symbol = :sm and contract_owner = :so",
-                        soci::use( quantity.to_real() ),
+                        soci::use( quantity.get_amount() ),
                         soci::use( quantity.get_symbol().name() ),
                         soci::use( action.account.to_string() );
 
@@ -266,10 +268,10 @@ namespace eosio {
                             "on  DUPLICATE key UPDATE balance = balance +  :amt ",
                             soci::use( issuer ),
                             soci::use( quantity.get_symbol().name() ),
-                            soci::use( quantity.to_real() ),
-                            soci::use( quantity.precision() ),
+                            soci::use( quantity.get_amount() ),
+                            soci::use( quantity.decimals() ),
                             soci::use( action.account.to_string() ),
-                            soci::use( quantity.to_real() );
+                            soci::use( quantity.get_amount() );
                 } catch(std::exception e) {
                     wlog("my god : ${e}",("e",e.what()));
                 } catch(...) {
@@ -288,13 +290,13 @@ namespace eosio {
                             "on  DUPLICATE key UPDATE balance = balance +  :amt ",
                             soci::use( to ),
                             soci::use( quantity.get_symbol().name() ),
-                            soci::use( quantity.to_real() ),
-                            soci::use( quantity.precision() ),
+                            soci::use( quantity.get_amount() ),
+                            soci::use( quantity.decimals() ),
                             soci::use( action.account.to_string() ),
-                            soci::use( quantity.to_real() );
+                            soci::use( quantity.get_amount() );
 
                     *m_session << "UPDATE tokens SET balance = balance - :am WHERE symbol = :sm and contract_owner = :co and account = :ac ",
-                            soci::use( quantity.to_real() ),
+                            soci::use( quantity.get_amount() ),
                             soci::use(  quantity.get_symbol().name() ),
                             soci::use( action.account.to_string() ),
                             soci::use( from );
@@ -330,8 +332,8 @@ namespace eosio {
                     insertassets = "INSERT assets(supply, max_supply, symbol_precision, symbol,  issuer, contract_owner) VALUES( :am, :mam, :pre, :sym, :issuer, :owner)";
                     *m_session << insertassets,
                             soci::use( 0 ),
-                            soci::use( maximum_supply.to_real() ),
-                            soci::use( maximum_supply.precision() ),
+                            soci::use( maximum_supply.get_amount() ),
+                            soci::use( maximum_supply.decimals() ),
                             soci::use( maximum_supply.get_symbol().name() ),
                             soci::use( issuer ),
                             soci::use( action.account.to_string() );
@@ -363,7 +365,7 @@ namespace eosio {
                 try{
                     //update asset issue amount
                     *m_session << "UPDATE assets SET supply = supply + :am WHERE symbol = :sm and contract_owner = :so",
-                        soci::use( quantity.to_real() ),
+                        soci::use( quantity.get_amount() ),
                         soci::use( quantity.get_symbol().name() ),
                         soci::use( action.account.to_string() );
 
@@ -377,10 +379,10 @@ namespace eosio {
                             "on  DUPLICATE key UPDATE balance = balance +  :amt ",
                             soci::use( issuer ),
                             soci::use( quantity.get_symbol().name() ),
-                            soci::use( quantity.to_real() ),
-                            soci::use( quantity.precision() ),
+                            soci::use( quantity.get_amount() ),
+                            soci::use( quantity.decimals() ),
                             soci::use( action.account.to_string() ),
-                            soci::use( quantity.to_real() );
+                            soci::use( quantity.get_amount() );
                 } catch(std::exception e) {
                     wlog("my god : ${e}",("e",e.what()));
                 } catch(...) {
@@ -411,13 +413,13 @@ namespace eosio {
                             "on  DUPLICATE key UPDATE balance = balance +  :amt ",
                             soci::use( to ),
                             soci::use( quantity.get_symbol().name() ),
-                            soci::use( quantity.to_real() ),
-                            soci::use( quantity.precision() ),
+                            soci::use( quantity.get_amount() ),
+                            soci::use( quantity.decimals() ),
                             soci::use( action.account.to_string() ),
-                            soci::use( quantity.to_real() );
+                            soci::use( quantity.get_amount() );
 
                     *m_session << "UPDATE tokens SET balance = balance - :am WHERE symbol = :sm and contract_owner = :co and account = :ac ",
-                            soci::use( quantity.to_real() ),
+                            soci::use( quantity.get_amount() ),
                             soci::use(  quantity.get_symbol().name() ),
                             soci::use( action.account.to_string() ),
                             soci::use( from );

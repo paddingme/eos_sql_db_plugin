@@ -33,7 +33,7 @@ DROP TABLE IF EXISTS `accounts`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `accounts` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `name` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '账户名',
   `abi` json DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -51,7 +51,7 @@ DROP TABLE IF EXISTS `accounts_keys`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `accounts_keys` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '账户名',
   `public_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `permission` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
@@ -68,13 +68,13 @@ DROP TABLE IF EXISTS `actions`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `actions` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '合约拥有者账号',
   `transaction_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `seq` smallint(6) NOT NULL DEFAULT '0',
   `parent` bigint(20) NOT NULL DEFAULT '0',
-  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'action 名称',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `data` json DEFAULT NULL,
+  `data` json DEFAULT NULL COMMENT 'action 数据',
   `authorization` mediumtext DEFAULT NULL,
   `eosto` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `eosfrom` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
@@ -123,12 +123,12 @@ DROP TABLE IF EXISTS `assets`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `assets` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `supply` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `max_supply` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `symbol_precision` int(11) NOT NULL DEFAULT '0',
-  `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `issuer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `contract_owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `supply` bigint(65) NOT NULL DEFAULT '0' COMMENT '已发行的token量',
+  `max_supply` bigint(65) NOT NULL DEFAULT '0' COMMENT '总token量',
+  `symbol_precision` int(2) NOT NULL DEFAULT '0' COMMENT 'token 资产精度',
+  `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'token资产符号',
+  `issuer` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'token拥有者',
+  `contract_owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'token合约拥有者',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_symbol_owner` (`symbol`,`contract_owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -171,10 +171,10 @@ DROP TABLE IF EXISTS `refunds`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `refunds` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '资源拥有者',
   `request_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `net_amount` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `cpu_amount` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `net_amount` bigint(65) NOT NULL DEFAULT '0' COMMENT '赎回的net资源',
+  `cpu_amount` bigint(65) NOT NULL DEFAULT '0' COMMENT '赎回的cpu资源',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_refunds_owner` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -189,11 +189,11 @@ DROP TABLE IF EXISTS `stakes`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `stakes` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `cpu_amount_by_self` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `net_amount_by_self` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `cpu_amount_by_other` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `net_amount_by_other` double(64,8) NOT NULL DEFAULT '0.00000000',
+  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '账号',
+  `cpu_amount_by_self` bigint(65) NOT NULL DEFAULT '0' COMMENT '自己抵押的cpu资源',
+  `net_amount_by_self` bigint(65) NOT NULL DEFAULT '0' COMMENT '自己抵押的net资源',
+  `cpu_amount_by_other` bigint(65) NOT NULL DEFAULT '0' COMMENT '别人帮忙抵押的cpu资源',
+  `net_amount_by_other` bigint(65) NOT NULL DEFAULT '0' COMMENT '别人帮忙抵押的net资源',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_stakes_account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -208,11 +208,11 @@ DROP TABLE IF EXISTS `tokens`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `tokens` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `balance` double(64,8) NOT NULL DEFAULT '0.00000000',
-  `symbol_precision` int(11) NOT NULL DEFAULT '0',
-  `contract_owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '账号',
+  `symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'token资产符号',
+  `balance` bigint(65) NOT NULL DEFAULT '0' COMMENT 'token 余额',
+  `symbol_precision` int(2) NOT NULL DEFAULT '0' COMMENT 'token资产精度',
+  `contract_owner` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'token合约拥有者',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_symbol_owner_account` (`account`,`symbol`,`contract_owner`),
   KEY `idx_tokens_account` (`account`)
@@ -270,9 +270,9 @@ DROP TABLE IF EXISTS `votes`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `votes` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `voter` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `proxy` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `producers` json DEFAULT NULL,
+  `voter` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '账户名',
+  `proxy` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '账号的投票代理人',
+  `producers` json DEFAULT NULL COMMENT '账号所投节点的列表',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_votes_voter` (`voter`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

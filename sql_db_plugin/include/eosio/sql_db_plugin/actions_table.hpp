@@ -35,7 +35,7 @@ class actions_table : public mysql_table {
         actions_table(){}
         actions_table(std::shared_ptr<soci::session> session);
 
-        void add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, std::vector<std::string>); 
+        void add(chain::action action, chain::transaction_id_type transaction_id, chain::block_timestamp_type block_time, std::vector<std::string>); 
         string add_data(chain::action );
 
         static const chain::account_name newaccount;

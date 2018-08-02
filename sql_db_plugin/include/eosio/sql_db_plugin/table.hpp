@@ -7,6 +7,8 @@
 #include <fc/variant.hpp>
 #include <fc/time.hpp>
 
+#include <eosio/sql_db_plugin/sql_db_plugin.hpp>
+
 namespace eosio{
 
 class mysql_table{

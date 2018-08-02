@@ -31,6 +31,12 @@ namespace eosio {
  *
  *   If SQL DB env not available (#ifndef SQL DB) this plugin is a no-op.
  */
+
+struct tx_id_block_time{
+    std::string tx_id;
+    chain::block_timestamp_type block_time;
+};
+
 class sql_db_plugin : public plugin<sql_db_plugin> {
     public:
         APPBASE_PLUGIN_REQUIRES((chain_plugin))
