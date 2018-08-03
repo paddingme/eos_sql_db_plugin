@@ -74,17 +74,18 @@ namespace eosio
                 }
 
                 trx_id_str = trx.id().str();
+                bool trace_result;
+                do{
+                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
+                    if(trace_result || exit) break;
+                    else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+                }while((!exit));
 
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }
 
-            bool trace_result;
-            do{
-                trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
-                if(trace_result || exit) break;
-                else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
-            }while((!exit));
+            
 
         }
 
