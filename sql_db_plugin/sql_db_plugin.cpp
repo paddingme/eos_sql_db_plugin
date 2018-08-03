@@ -38,13 +38,11 @@ namespace eosio {
 
             fc::optional<boost::signals2::scoped_connection> accepted_block_connection;
             fc::optional<boost::signals2::scoped_connection> irreversible_block_connection;
-            fc::optional<boost::signals2::scoped_connection> irreversible_block_for_traces_connection;
             fc::optional<boost::signals2::scoped_connection> accepted_transaction_connection;
             fc::optional<boost::signals2::scoped_connection> applied_transaction_connection;
 
             void accepted_block( const chain::block_state_ptr& );
             void applied_irreversible_block( const chain::block_state_ptr& );
-            void applied_irreversible_block_for_traces( const chain::block_state_ptr& );
             void accepted_transaction( const chain::transaction_metadata_ptr& );
             void applied_transaction( const chain::transaction_trace_ptr& );
 
@@ -77,32 +75,39 @@ namespace eosio {
         handler->push_irreversible_block_state(bs);
     }
 
-    void sql_db_plugin_impl::applied_irreversible_block_for_traces( const chain::block_state_ptr& bs) {
-        for(auto& receipt : bs->block->transactions){
-            string trx_id_str;
-            if( receipt.trx.contains<chain::packed_transaction>() ){
-                const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
+    // void sql_db_plugin_impl::applied_irreversible_block_for_traces( const chain::block_state_ptr& bs) {
+    //     for(auto& receipt : bs->block->transactions){
+    //         string trx_id_str;
+    //         if( receipt.trx.contains<chain::packed_transaction>() ){
+    //             const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
                 
-                //filter out system timer action
-                if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
+    //             //filter out system timer action
+    //             if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
 
-                //filter out attack contract
-                bool attack_check = true;
-                for(auto& action : trx.actions ){
-                    if(!filter_out_contract(action.account.to_string()) ){
-                        attack_check = false;
-                    }
-                }
+    //             if( trx.actions[0].name.to_string()=="refund" ){
+    //                 ilog("irr 222");
+    //                 ilog(trx.id().str());
+    //             }
+    //             //filter out attack contract
+    //             bool attack_check = true;
+    //             for(auto& action : trx.actions ){
+    //                 if(!filter_out_contract(action.account.to_string()) ){
+    //                     attack_check = false;
+    //                 }
+    //             }
                 
-                if(attack_check) continue;
+    //             if(attack_check) continue;
+    //             if( trx.actions[0].name.to_string()=="refund" ){
+    //                 ilog("irr 222");
+    //                 ilog(trx.id().str());
+    //             }
+    //             trx_id_str = trx.id().str();
+    //             tx_id_block_time traces_params{trx_id_str,bs->block->timestamp};
+    //             handler->push_irreversible_block_for_traces_state( traces_params );
+    //         }
+    //     }
 
-                trx_id_str = trx.id().str();
-                tx_id_block_time traces_params{trx_id_str,bs->block->timestamp};
-                handler->push_irreversible_block_for_traces_state( traces_params );
-            }
-        }
-
-    }
+    // }
 
     void sql_db_plugin_impl::accepted_transaction( const chain::transaction_metadata_ptr& tm ) {
         handler->push_transaction_metadata(tm);
@@ -114,15 +119,21 @@ namespace eosio {
             return ;
         }
 
+        // if( tt->action_traces[0].act.name.to_string()=="refund" ) ilog("看我看我啊啊啊啊啊啊");
+
         //filter out attack contract
-        bool attack_check = true;
-        for(auto& action_trace : tt->action_traces ){
-            if(!filter_out_contract(action_trace.act.account.to_string()) ){
-                attack_check = false;
-            }
+        // bool attack_check = true;
+        // for(auto& action_trace : tt->action_traces ){
+        //     if(!filter_out_contract(action_trace.act.account.to_string()) ){
+        //         attack_check = false;
+        //     }
+        // }
+        // if(attack_check) return;
+
+        if( tt->action_traces.size()==1 && filter_out_contract(tt->action_traces[0].act.name.to_string()) ){
+            return ;
         }
         
-        if(attack_check) return;
 
         handler->push_transaction_trace(tt);
     }
@@ -182,7 +193,7 @@ namespace eosio {
         //for three thread。 TODO: change to thread db pool
         auto db_blocks = std::make_unique<database>(uri_str, block_num_start);
         auto db_traces = std::make_unique<database>(uri_str, block_num_start);
-        auto db_irreversible = std::make_unique<database>(uri_str, block_num_start, action_filter_on);
+        auto db_irreversible = std::make_unique<database>(uri_str, block_num_start, action_filter_on, my->contract_filter_out);
 
         if (!db_blocks->is_started()) {
             if (block_num_start == 0) {
@@ -206,11 +217,7 @@ namespace eosio {
 
         // my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
         //     my->accepted_block(bs);
-        // } ));
-
-        my->irreversible_block_for_traces_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
-            my->applied_irreversible_block_for_traces(bs);
-        } ));     
+        // } ));   
 
         my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
             my->applied_irreversible_block(bs);

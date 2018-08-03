@@ -12,6 +12,8 @@ namespace eosio {
 
 
     void blocks_table::add( const chain::block_state_ptr&  bs ) {
+        reconnect(m_session);
+
         auto block = bs->block;
         const auto block_id_str = block->id().str();
         const auto previous_block_id_str = block->previous.str();
@@ -49,6 +51,8 @@ namespace eosio {
     }
 
     bool blocks_table::irreversible_set( std::string block_id, bool irreversible ){
+        reconnect(m_session);
+        
         int amount = 0;
         try{
             soci::statement st = ( m_session->prepare << "UPDATE blocks SET irreversible = :irreversible WHERE id = :id",

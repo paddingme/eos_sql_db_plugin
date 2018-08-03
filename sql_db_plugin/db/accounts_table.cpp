@@ -11,6 +11,8 @@ accounts_table::accounts_table(std::shared_ptr<soci::session> session):
 }
 
 void accounts_table::add(string name) {
+    reconnect(m_session);
+    
     *m_session << "INSERT INTO accounts (name) VALUES (:name)",
             soci::use(name);
 }

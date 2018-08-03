@@ -11,8 +11,11 @@ namespace eosio {
     }
 
     void traces_table::add( const chain::transaction_trace_ptr& trace) {
+        reconnect(m_session);
+
         const auto trace_id_str = trace->id.str();
         const auto data = fc::json::to_string(trace);
+
         try{
             *m_session << "REPLACE INTO traces(id, data) "
                         "VALUES (:id, :data)",
@@ -27,6 +30,8 @@ namespace eosio {
     }
 
     bool traces_table::list( std::string trace_id_str, chain::block_timestamp_type block_time){
+        reconnect(m_session);
+        
         std::string data;
         long long tx_id;
         block_timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
@@ -208,6 +213,8 @@ namespace eosio {
 
             } else if ( action.name == N(refund) ){
                 auto owner = abi_data["owner"].as<chain::name>().to_string();
+                wlog("进来啦");
+                wlog("refund ${owner}",("owner",owner));
 
                 try{
                     *m_session << " UPDATE refunds SET net_amount = 0, cpu_amount = 0 WHERE owner = :ow",soci::use(owner);

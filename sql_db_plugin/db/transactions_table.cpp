@@ -12,6 +12,8 @@ namespace eosio {
     }
 
     void transactions_table::add( chain::transaction transaction ) {
+        reconnect(m_session);
+
         const auto transaction_id_str = transaction.id().str();
         const auto expiration = std::chrono::seconds{transaction.expiration.sec_since_epoch()}.count();
         try{
@@ -34,6 +36,8 @@ namespace eosio {
     }
 
     void transactions_table::irreversible_set( std::string block_id, bool irreversible, std::string transaction_id_str) {
+        reconnect(m_session);
+
         try{
             *m_session << "UPDATE transactions SET block_id = :block_id, irreversible = :irreversible WHERE id = :id ",
                 soci::use(block_id),
@@ -48,6 +52,8 @@ namespace eosio {
     }
 
     bool transactions_table::find_transaction( std::string transaction_id_str) {
+        reconnect(m_session);
+        
         int amount;
         try{
             *m_session << "SELECT COUNT(*) FROM transactions WHERE id = :id",

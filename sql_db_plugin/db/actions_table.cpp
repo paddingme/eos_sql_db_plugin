@@ -12,6 +12,8 @@ namespace eosio {
 
         if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
 
+        reconnect(m_session);
+
         chain::abi_def abi;
         std::string abi_def_account;
         chain::abi_serializer abis;
