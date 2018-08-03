@@ -130,7 +130,7 @@ namespace eosio {
         // }
         // if(attack_check) return;
 
-        if( tt->action_traces.size()==1 && filter_out_contract(tt->action_traces[0].act.name.to_string()) ){
+        if( tt->action_traces.size()==1 && filter_out_contract(tt->action_traces[0].act.account.to_string()) ){
             return ;
         }
         

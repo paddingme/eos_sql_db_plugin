@@ -17,8 +17,7 @@ namespace eosio {
         const auto data = fc::json::to_string(trace);
 
         try{
-            *m_session << "REPLACE INTO traces(id, data) "
-                        "VALUES (:id, :data)",
+            *m_session << "REPLACE INTO traces(id, data) VALUES (:id, :data)",
                 soci::use(trace_id_str),
                 soci::use(data);
                 

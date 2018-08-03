@@ -70,7 +70,7 @@ namespace eosio
                 }
 
                 if(trx.actions.size()==1 && std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),trx.actions[0].account.to_string()) != m_contract_filter_out.end() ){
-                    return ;
+                    continue;
                 }
 
                 trx_id_str = trx.id().str();
