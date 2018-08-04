@@ -335,7 +335,7 @@ namespace eosio {
 
                 string insertassets;
                 try{
-                    insertassets = "INSERT assets(supply, max_supply, symbol_precision, symbol,  issuer, contract_owner) VALUES( :am, :mam, :pre, :sym, :issuer, :owner)";
+                    insertassets = "REPLACE INTO assets(supply, max_supply, symbol_precision, symbol,  issuer, contract_owner) VALUES( :am, :mam, :pre, :sym, :issuer, :owner)";
                     *m_session << insertassets,
                             soci::use( 0 ),
                             soci::use( maximum_supply.get_amount() ),
