@@ -43,6 +43,8 @@ namespace eosio {
                         soci::use(new_producers),
                         soci::use(block_id_str);
             }
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception e) {
             wlog( "add blocks failed. ${e}",("e",e.what()) );
         } catch(...) {
@@ -67,6 +69,8 @@ namespace eosio {
                 if(amount==0) return true;
             }
             // wlog( "${amount}",("amount",amount) );
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception e) {
             wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {

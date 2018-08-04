@@ -42,6 +42,8 @@ namespace eosio {
                     soci::use(dataJson.payer.to_string()),
                     soci::use(dataJson.name.to_string()),
                     soci::use(dataJson.account.to_string());
+            } catch(soci::mysql_soci_error e) {
+                wlog("soci::error: ${e}",("e",e.what()) );
             } catch(...) {
                 wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
                 wlog("${data}",("data",fc::json::to_string(action)));
@@ -50,6 +52,8 @@ namespace eosio {
 
         try {
             parse_actions( action );
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception& e){
             wlog(e.what());
         } catch(...){
@@ -106,6 +110,8 @@ namespace eosio {
                         try{
                             *m_session << "UPDATE accounts SET abi = :abi, updated_at = NOW() WHERE name = :name",soci::use(json_str),soci::use(setabi.account.to_string());
                             // ilog("update abi ${n}",("n",action.account.to_string()));
+                        } catch(soci::mysql_soci_error e) {
+                            wlog("soci::error: ${e}",("e",e.what()) );
                         }catch(...){
                             wlog("insert account abi failed");
                         }
@@ -139,6 +145,8 @@ namespace eosio {
                 wlog("${n} abi is null.",("n",action.account));
             }
 
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         }catch( std::exception& e ) {
             ilog( "Unable to convert action.data to ABI: ${s}::${n}, std what: ${e}",
                     ("s", action.account)( "n", action.name )( "e", e.what()));

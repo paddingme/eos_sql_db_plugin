@@ -27,6 +27,8 @@ namespace eosio {
                 soci::use(expiration),
                 soci::use(expiration),
                 soci::use(transaction.total_actions());
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch (std::exception e) {
             wlog("insert transaction failed. ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
@@ -43,6 +45,8 @@ namespace eosio {
                 soci::use(block_id),
                 soci::use(irreversible?1:0),
                 soci::use(transaction_id_str);
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch (std::exception e) {
             wlog("update transaction failed ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
@@ -59,6 +63,8 @@ namespace eosio {
             *m_session << "SELECT COUNT(*) FROM transactions WHERE id = :id",
                 soci::into(amount),
                 soci::use(transaction_id_str);
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {
             amount = 0;
             wlog("find transaction failed. ${id}",("id",transaction_id_str));
