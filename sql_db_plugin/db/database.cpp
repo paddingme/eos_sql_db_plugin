@@ -53,19 +53,19 @@ namespace eosio
         for(auto& receipt : bs->block->transactions) {
             string trx_id_str;
             if( receipt.trx.contains<chain::packed_transaction>() ){
-                const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
+                const auto& tm = chain::transaction_metadata(receipt.trx.get<chain::packed_transaction>());
 
-                if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
+                if(tm.trx.actions.size()==1 && tm.trx.actions[0].name.to_string() == "onblock" ) continue ;
 
                 // for(auto actions : trx.actions){
                 //     m_actions_table->add(actions,trx.id(), bs->block->timestamp, m_action_filter_on);
                 // }
 
-                if(trx.actions.size()==1 && std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),trx.actions[0].account.to_string()) != m_contract_filter_out.end() ){
+                if(tm.trx.actions.size()==1 && std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),tm.trx.actions[0].account.to_string()) != m_contract_filter_out.end() ){
                     continue;
                 }
 
-                trx_id_str = trx.id().str();
+                trx_id_str = tm.trx.id().str();
                 
 
             }else{
@@ -87,6 +87,8 @@ namespace eosio
                 } else if(exit) {
                     break;
                 }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+                ilog( "${tx_id}",("tx_id",trx_id_str) );
+
             }while((!exit));
             
 
