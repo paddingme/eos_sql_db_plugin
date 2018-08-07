@@ -22,7 +22,7 @@ namespace eosio {
 
 class consumer final : public boost::noncopyable {
     public:
-        consumer(std::unique_ptr<database> db,std::unique_ptr<database> db2,std::unique_ptr<database> db3, size_t queue_size);
+        consumer(std::unique_ptr<database> db, size_t queue_size);
         ~consumer();
         void shutdown();
 
@@ -47,8 +47,6 @@ class consumer final : public boost::noncopyable {
         std::deque<chain::transaction_trace_ptr> transaction_trace_process_queue;
 
         std::unique_ptr<database> db;
-        std::unique_ptr<database> db2;
-        std::unique_ptr<database> db3;
         size_t queue_size;
         boost::atomic<bool> exit{false};
         boost::thread consume_blocks;
@@ -62,10 +60,8 @@ class consumer final : public boost::noncopyable {
 
     };
 
-    consumer::consumer(std::unique_ptr<database> db, std::unique_ptr<database> db2, std::unique_ptr<database> db3, size_t queue_size):
+    consumer::consumer(std::unique_ptr<database> db, size_t queue_size):
         db(std::move(db)),
-        db2(std::move(db2)),
-        db3(std::move(db3)),
         queue_size(queue_size),
         exit(false),
         // consume_thread_run_blocks(boost::thread([&]{this->run_blocks();})),
@@ -234,7 +230,7 @@ class consumer final : public boost::noncopyable {
                 //process trace
                 while (!transaction_trace_process_queue.empty()) {
                     const auto& tt = transaction_trace_process_queue.front();
-                    db2->consume_transaction_trace(tt);
+                    db->consume_transaction_trace(tt);
                     transaction_trace_process_queue.pop_front();
                 }
 
@@ -287,7 +283,7 @@ class consumer final : public boost::noncopyable {
                 // process irreversible blocks
                 while (!irreversible_block_state_process_queue.empty()) {
                     const auto& bs = irreversible_block_state_process_queue.front();
-                    db3->consume_irreversible_block_state(bs, lock_db, condition, exit);
+                    db->consume_irreversible_block_state(bs, lock_db, condition, exit);
                     irreversible_block_state_process_queue.pop_front();
                 }
 

@@ -191,18 +191,16 @@ namespace eosio {
         ilog("queue size ${size}",("size",queue_size));
 
         //for three thread。 TODO: change to thread db pool
-        auto db_blocks = std::make_unique<database>(uri_str, block_num_start);
-        auto db_traces = std::make_unique<database>(uri_str, block_num_start);
-        auto db_irreversible = std::make_unique<database>(uri_str, block_num_start, action_filter_on, my->contract_filter_out);
+        auto db = std::make_unique<database>(uri_str, block_num_start, 5, action_filter_on, my->contract_filter_out);
 
-        if (!db_blocks->is_started()) {
+        if (!db->is_started()) {
             if (block_num_start == 0) {
                 ilog("Resync requested: wiping database");
-                db_blocks->wipe();
+                db->wipe();
             }
         }
 
-        my->handler = std::make_unique<consumer>(std::move(db_blocks),std::move(db_traces),std::move(db_irreversible),queue_size);
+        my->handler = std::make_unique<consumer>(std::move(db),queue_size);
         chain_plugin* chain_plug = app().find_plugin<chain_plugin>();
         FC_ASSERT(chain_plug);
         auto& chain = chain_plug->chain();

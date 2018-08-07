@@ -4,19 +4,20 @@
 namespace eosio
 {
 
-    database::database(const std::string &uri, uint32_t block_num_start) {
-        m_session = std::make_shared<soci::session>(uri); 
-        m_accounts_table = std::make_unique<accounts_table>(m_session);
-        m_blocks_table = std::make_unique<blocks_table>(m_session);
-        m_traces_table = std::make_unique<traces_table>(m_session);
-        m_transactions_table = std::make_unique<transactions_table>(m_session);
-        m_actions_table = std::make_unique<actions_table>(m_session);
+    database::database(const std::string &uri, uint32_t block_num_start, size_t pool_size) {
+        // m_session = std::make_shared<soci::session>(uri); 
+        m_session_pool = std::make_shared<soci_session_pool>(pool_size,uri);
+        m_accounts_table = std::make_unique<accounts_table>(m_session_pool);
+        m_blocks_table = std::make_unique<blocks_table>(m_session_pool);
+        m_traces_table = std::make_unique<traces_table>(m_session_pool);
+        m_transactions_table = std::make_unique<transactions_table>(m_session_pool);
+        m_actions_table = std::make_unique<actions_table>(m_session_pool);
         m_block_num_start = block_num_start;
         system_account = chain::name(chain::config::system_account_name).to_string();
     }
 
-    database::database(const std::string &uri, uint32_t block_num_start, std::vector<string> filter_on, std::vector<string> filter_out) {
-        new (this)database(uri,block_num_start);
+    database::database(const std::string &uri, uint32_t block_num_start, size_t pool_size, std::vector<string> filter_on, std::vector<string> filter_out) {
+        new (this)database(uri,block_num_start,pool_size);
         m_action_filter_on = filter_on;
         m_contract_filter_out = filter_out;
     }
@@ -55,36 +56,38 @@ namespace eosio
                 const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
 
                 if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
-                
-                // bool attack_check;
-                // for(auto& action : trx.actions ){
-                //     if( std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),action.account.to_string()) == m_contract_filter_out.end() ){
-                //         attack_check = false;
-                //     }
-                // }
-                
-                // if(attack_check) continue;
 
-                for(auto actions : trx.actions){
-                    m_actions_table->add(actions,trx.id(), bs->block->timestamp, m_action_filter_on);
-                }
+                // for(auto actions : trx.actions){
+                //     m_actions_table->add(actions,trx.id(), bs->block->timestamp, m_action_filter_on);
+                // }
 
                 if(trx.actions.size()==1 && std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),trx.actions[0].account.to_string()) != m_contract_filter_out.end() ){
                     continue;
                 }
 
                 trx_id_str = trx.id().str();
-                bool trace_result;
-                do{
-                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
-                    if(trace_result || exit) break;
-                    else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
-                }while((!exit));
+                
 
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }
 
+            string trace_result;
+            do{
+                trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
+                if( !trace_result.empty() ){
+                    auto traces = fc::json::from_string(trace_result).as<chain::transaction_trace>();
+                    for(auto atc : traces.action_traces){
+                        if( atc.receipt.receiver == atc.act.account ){
+                            m_actions_table->add(atc.act, trx_id_str, bs->block->timestamp, m_action_filter_on);
+                        }
+                    }
+                    m_traces_table->parse_traces(traces);
+                    break;
+                } else if(exit) {
+                    break;
+                }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+            }while((!exit));
             
 
         }

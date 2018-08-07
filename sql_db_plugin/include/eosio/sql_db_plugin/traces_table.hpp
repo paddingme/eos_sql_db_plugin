@@ -18,9 +18,11 @@ using namespace std;
 class traces_table : public mysql_table {
     public:
         traces_table( std::shared_ptr<soci::session> session );
+        traces_table(std::shared_ptr<soci_session_pool> session_pool);
 
         void add( const chain::transaction_trace_ptr& );
-        bool list( string, chain::block_timestamp_type );
+        std::string list( string, chain::block_timestamp_type );
+        void parse_traces(chain::transaction_trace trace);
         auto add_data(chain::action action);
         void parse_actions( chain::action action );
         void dfs_inline_traces( vector<chain::action_trace> itc );
@@ -30,7 +32,8 @@ class traces_table : public mysql_table {
         long long block_timestamp;
 
     private:
-        std::shared_ptr<soci::session> m_session;
+        // std::shared_ptr<soci::session> m_session;
+        std::shared_ptr<soci_session_pool> m_session_pool;
     };
 
 } // namespace

@@ -5,13 +5,14 @@
 
 namespace eosio {
 
-    traces_table::traces_table(std::shared_ptr<soci::session> session):
-        m_session(session) {
+    traces_table::traces_table(std::shared_ptr<soci_session_pool> session_pool):
+        m_session_pool(session_pool)
+    {
 
     }
 
     void traces_table::add( const chain::transaction_trace_ptr& trace) {
-        reconnect(m_session);
+        auto m_session = m_session_pool->get_session();
 
         const auto trace_id_str = trace->id.str();
         const auto data = fc::json::to_string(trace);
@@ -30,8 +31,8 @@ namespace eosio {
         }
     }
 
-    bool traces_table::list( std::string trace_id_str, chain::block_timestamp_type block_time){
-        reconnect(m_session);
+    std::string traces_table::list( std::string trace_id_str, chain::block_timestamp_type block_time){
+        auto m_session = m_session_pool->get_session();
 
         std::string data;
         long long tx_id;
@@ -49,11 +50,8 @@ namespace eosio {
 
         if(data.empty()){
             wlog( "trace data is null. ${id}",("id",trace_id_str) );
-            return false;
+            return data;
         }
-        auto trace = fc::json::from_string(data).as<chain::transaction_trace>();
-        // ilog("${result}",("result",trace));
-        dfs_inline_traces( trace.action_traces );
 
         try{
             *m_session << "DELETE FROM traces WHERE tx_id = :id",soci::use(tx_id);
@@ -65,8 +63,11 @@ namespace eosio {
         } catch(...){
             wlog( "data:${data}",("data",data) );
         }
+        return data;
+    }
 
-        return true;
+    void traces_table::parse_traces(chain::transaction_trace trace){
+        dfs_inline_traces( trace.action_traces );    
     }
 
     void traces_table::dfs_inline_traces( vector<chain::action_trace> trace ){
@@ -81,7 +82,8 @@ namespace eosio {
     }
 
     void traces_table::parse_actions( chain::action action ) {
-        
+        auto m_session = m_session_pool->get_session();
+
         chain::abi_def abi;
         std::string abi_def_account;
         chain::abi_serializer abis;

@@ -7,6 +7,7 @@
 #include <eosio/chain/trace.hpp>
 #include <eosio/chain/types.hpp>
 
+#include <eosio/sql_db_plugin/session_pool.hpp>
 #include <eosio/sql_db_plugin/accounts_table.hpp>
 #include <eosio/sql_db_plugin/transactions_table.hpp>
 #include <eosio/sql_db_plugin/blocks_table.hpp>
@@ -20,8 +21,8 @@ namespace eosio {
 
 class database {
     public:
-        database(const std::string& uri, uint32_t block_num_start);
-        database(const std::string& uri, uint32_t block_num_start, std::vector<std::string>, std::vector<std::string>);
+        database(const std::string& uri, uint32_t block_num_start, size_t pool_size);
+        database(const std::string& uri, uint32_t block_num_start, size_t pool_size, std::vector<std::string>, std::vector<std::string>);
         
         void wipe();
         bool is_started();
@@ -39,7 +40,8 @@ class database {
         static const std::string accounts_col;
 
     private:
-        std::shared_ptr<soci::session> m_session;
+        // std::shared_ptr<soci::session> m_session;
+        std::shared_ptr<soci_session_pool> m_session_pool;
         std::unique_ptr<actions_table> m_actions_table;
         std::unique_ptr<accounts_table> m_accounts_table;
         std::unique_ptr<blocks_table> m_blocks_table;

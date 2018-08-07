@@ -6,13 +6,14 @@
 
 namespace eosio {
 
-    transactions_table::transactions_table(std::shared_ptr<soci::session> session):
-        m_session(session) {
+    transactions_table::transactions_table(std::shared_ptr<soci_session_pool> session_pool):
+        m_session_pool(session_pool)
+    {
 
     }
 
     void transactions_table::add( chain::transaction transaction ) {
-        reconnect(m_session);
+        auto m_session = m_session_pool->get_session();
 
         const auto transaction_id_str = transaction.id().str();
         const auto expiration = std::chrono::seconds{transaction.expiration.sec_since_epoch()}.count();
@@ -38,7 +39,7 @@ namespace eosio {
     }
 
     void transactions_table::irreversible_set( std::string block_id, bool irreversible, std::string transaction_id_str) {
-        reconnect(m_session);
+        auto m_session = m_session_pool->get_session();
 
         try{
             *m_session << "UPDATE transactions SET block_id = :block_id, irreversible = :irreversible WHERE id = :id ",
@@ -56,7 +57,7 @@ namespace eosio {
     }
 
     bool transactions_table::find_transaction( std::string transaction_id_str) {
-        reconnect(m_session);
+        auto m_session = m_session_pool->get_session();
         
         int amount;
         try{

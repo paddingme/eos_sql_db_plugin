@@ -3,22 +3,22 @@
 
 namespace eosio {
 
-    actions_table::actions_table(std::shared_ptr<soci::session> session):
-        m_session(session) {
+    actions_table::actions_table(std::shared_ptr<soci_session_pool> session_pool):
+        m_session_pool(session_pool)
+    {
 
     }
 
-    void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, chain::block_timestamp_type block_time, std::vector<std::string> filter_out) {
+    void actions_table::add(chain::action action, std::string transaction_id, chain::block_timestamp_type block_time, std::vector<std::string> filter_out) {
 
         if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
 
-        reconnect(m_session);
+        auto m_session = m_session_pool->get_session();
 
         chain::abi_def abi;
         std::string abi_def_account;
         chain::abi_serializer abis;
         soci::indicator ind;
-        const auto transaction_id_str = transaction_id.str();
         const auto timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
 
         string json = add_data(action);
@@ -35,7 +35,7 @@ namespace eosio {
                     soci::use(action.name.to_string()),
                     soci::use(json),
                     soci::use(json_auth),
-                    soci::use(transaction_id_str),
+                    soci::use(transaction_id),
                     soci::use(dataJson.to.to_string()),
                     soci::use(dataJson.from.to_string()),
                     soci::use(dataJson.receiver.to_string()),
@@ -62,7 +62,8 @@ namespace eosio {
     }
 
     void actions_table::parse_actions( chain::action action ) {
-        
+        auto m_session = m_session_pool->get_session();
+
         if(action.name == newaccount && action.account == chain::config::system_account_name) {
             auto action_data = action.data_as<chain::newaccount>();
             *m_session << "INSERT INTO accounts (name) VALUES (:name)",
@@ -91,6 +92,8 @@ namespace eosio {
 
 
     string actions_table::add_data(chain::action action){
+        auto m_session = m_session_pool->get_session();
+
         string json_str = "{}";
 
         if(action.data.size() ==0 ){
