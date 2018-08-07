@@ -9,8 +9,6 @@ class transactions_table : public mysql_table {
     public:
         transactions_table( std::shared_ptr<soci::session> session );
 
-        void drop();
-        void create();
         void add( chain::transaction transaction );
         void irreversible_set( std::string block_id, bool irreversible, std::string transaction_id_str );
         bool find_transaction( std::string transaction_id_str);

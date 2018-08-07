@@ -19,8 +19,6 @@ class traces_table : public mysql_table {
     public:
         traces_table( std::shared_ptr<soci::session> session );
 
-        void drop();
-        void create();
         void add( const chain::transaction_trace_ptr& );
         bool list( string, chain::block_timestamp_type );
         auto add_data(chain::action action);

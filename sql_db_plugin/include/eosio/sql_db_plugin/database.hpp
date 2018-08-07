@@ -21,12 +21,12 @@ namespace eosio {
 class database {
     public:
         database(const std::string& uri, uint32_t block_num_start);
+        database(const std::string& uri, uint32_t block_num_start, std::vector<std::string>, std::vector<std::string>);
         
         void wipe();
         bool is_started();
         void consume_block_state( const chain::block_state_ptr& );
-        void consume_irreversible_block_state( const chain::block_state_ptr&, boost::mutex::scoped_lock&, boost::condition_variable&, boost::atomic<bool>& );
-
+        void consume_irreversible_block_state( const chain::block_state_ptr& , boost::mutex::scoped_lock& , boost::condition_variable& condition,boost::atomic<bool>& exit);
 
         void consume_transaction_metadata( const chain::transaction_metadata_ptr& );
         void consume_transaction_trace( const chain::transaction_trace_ptr& );
@@ -47,6 +47,9 @@ class database {
         std::unique_ptr<traces_table> m_traces_table;
         std::string system_account;
         uint32_t m_block_num_start;
+        std::vector<std::string> m_action_filter_on;
+        std::vector<std::string> m_contract_filter_out;
+
     };
 
 } // namespace

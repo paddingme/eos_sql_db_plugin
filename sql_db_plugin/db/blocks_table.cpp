@@ -10,39 +10,10 @@ namespace eosio {
 
     }
 
-    void blocks_table::drop() {
-        try {
-            *m_session << "DROP TABLE IF EXISTS blocks";
-        }
-        catch(std::exception& e){
-            wlog(e.what());
-        }
-    }
-
-    void blocks_table::create() {
-        *m_session << "CREATE TABLE blocks("
-                "id VARCHAR(64) PRIMARY KEY,"
-                "block_number INT NOT NULL AUTO_INCREMENT,"
-                "prev_block_id VARCHAR(64),"
-                "irreversible TINYINT(1) DEFAULT 0,"
-                "timestamp DATETIME DEFAULT NOW(),"
-                "transaction_merkle_root VARCHAR(64),"
-                "action_merkle_root VARCHAR(64),"
-                "producer VARCHAR(12),"
-                "version INT NOT NULL DEFAULT 0,"
-                "new_producers JSON DEFAULT NULL,"
-                "num_transactions INT DEFAULT 0,"
-                "confirmed INT,"
-                "UNIQUE KEY block_number (block_number)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
-
-        *m_session << "CREATE INDEX idx_blocks_producer ON blocks (producer);";
-        *m_session << "CREATE INDEX idx_blocks_number ON blocks (block_number);";
-
-    }
-
-
 
     void blocks_table::add( const chain::block_state_ptr&  bs ) {
+        reconnect(m_session);
+
         auto block = bs->block;
         const auto block_id_str = block->id().str();
         const auto previous_block_id_str = block->previous.str();
@@ -72,6 +43,8 @@ namespace eosio {
                         soci::use(new_producers),
                         soci::use(block_id_str);
             }
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception e) {
             wlog( "add blocks failed. ${e}",("e",e.what()) );
         } catch(...) {
@@ -80,6 +53,8 @@ namespace eosio {
     }
 
     bool blocks_table::irreversible_set( std::string block_id, bool irreversible ){
+        reconnect(m_session);
+        
         int amount = 0;
         try{
             soci::statement st = ( m_session->prepare << "UPDATE blocks SET irreversible = :irreversible WHERE block_id = :id",
@@ -94,6 +69,8 @@ namespace eosio {
                 if(amount==0) return true;
             }
             // wlog( "${amount}",("amount",amount) );
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception e) {
             wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {

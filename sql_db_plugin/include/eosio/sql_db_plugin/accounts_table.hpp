@@ -11,8 +11,6 @@ class accounts_table  : public mysql_table {
         accounts_table(){};
         accounts_table(std::shared_ptr<soci::session> session);
 
-        void drop();
-        void create();
         void add(string name);
         bool exist(string name);
         void add_eosio(string name,string abi);
