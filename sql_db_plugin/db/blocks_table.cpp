@@ -63,13 +63,14 @@ namespace eosio {
                     soci::use(block_id) );
             st.execute(true);
             amount = st.get_affected_rows();
+
+            //sometime soci will wrong, amount is still zero, so double check
             if(amount==0){
                 *m_session << "select count(*) from blocks where irreversible = 0 and id = :id ",
                     soci::into(amount),
                     soci::use(block_id);
                 if(amount==0) return true;
             }
-            // wlog( "${amount}",("amount",amount) );
         } catch(soci::mysql_soci_error e) {
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception e) {

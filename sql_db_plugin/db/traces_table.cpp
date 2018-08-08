@@ -89,15 +89,32 @@ namespace eosio {
         chain::abi_serializer abis;
         soci::indicator ind;
 
-        *m_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
-
-        if (!abi_def_account.empty()) {
-            abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
-        } else if (action.account == chain::config::system_account_name) {
-            abi = chain::eosio_contract_abi(abi);
-        } else {
-            return; // no ABI no party. Should we still store it?
+        try{
+            *m_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
+        } catch(std::exception e) {
+            wlog( "${e}",("e",e.what()) );
+        } catch(...) {
+            wlog(" select abi wrong");
         }
+
+        try{
+            if (!abi_def_account.empty()) {
+                abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
+            } else if (action.account == chain::config::system_account_name) {
+                abi = chain::eosio_contract_abi(abi);
+            } else {
+                return; // no ABI no party. Should we still store it?
+            }
+        } catch(fc::exception& e) {
+            wlog("transfer data wrong ${e}",("e",e.what()));
+            return;
+        } catch(...){
+            wlog("transfer data wrong");
+            return;
+        }
+        
 
         abis.set_abi(abi, max_serialization_time);
 

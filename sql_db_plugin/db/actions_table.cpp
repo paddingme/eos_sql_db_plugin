@@ -52,7 +52,9 @@ namespace eosio {
 
         try {
             parse_actions( action );
-        } catch(soci::mysql_soci_error e) {
+        }  catch (fc::exception& e) {
+            elog("FC Exception ${e}", ("e", e.to_string()));
+        }  catch(soci::mysql_soci_error e) {
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(std::exception& e){
             wlog(e.what());
@@ -120,7 +122,7 @@ namespace eosio {
                         }
 
                         return json_str;
-                    }catch(fc::exception& e){
+                    } catch(fc::exception& e) {
                         wlog("get setabi data wrong ${e}",("e",e.what()));
                     }
                 }
@@ -140,6 +142,8 @@ namespace eosio {
                     auto binary_data = abis.binary_to_variant( abis.get_action_type(action.name), action.data, max_serialization_time);
                     json_str = fc::json::to_string(binary_data);
                     return json_str;
+                }  catch (fc::exception& e) {
+                    elog("FC Exception ${e}", ("e", e.to_string()));
                 } catch(...) {
                     wlog("unable to convert account abi to abi_def for ${s}::${n} :${abi}",("s",action.account)("n",action.name)("abi",action.data));
                     wlog("analysis data failed");
