@@ -119,20 +119,14 @@ namespace eosio {
             return ;
         }
 
-        // if( tt->action_traces[0].act.name.to_string()=="refund" ) ilog("看我看我啊啊啊啊啊啊");
-
         //filter out attack contract
-        // bool attack_check = true;
-        // for(auto& action_trace : tt->action_traces ){
-        //     if(!filter_out_contract(action_trace.act.account.to_string()) ){
-        //         attack_check = false;
-        //     }
-        // }
-        // if(attack_check) return;
-
-        if( tt->action_traces.size()==1 && filter_out_contract(tt->action_traces[0].act.account.to_string()) ){
-            return ;
+        bool attack_check = true;
+        for(auto& action_trace : tt->action_traces ){
+            if(!filter_out_contract(action_trace.act.account.to_string()) ){
+                attack_check = false;
+            }
         }
+        if(attack_check) return;
         
 
         handler->push_transaction_trace(tt);

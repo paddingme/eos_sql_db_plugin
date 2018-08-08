@@ -92,7 +92,7 @@ class consumer final : public boost::noncopyable {
         boost::mutex::scoped_lock lock(mtx);
         if (queue.size() > queue_size) {
             lock.unlock();
-            condition.notify_one();
+            condition.notify_all();
             if (last_queue_size < queue.size()) {
                 sleep_time += 100;
             } else {
@@ -264,7 +264,6 @@ class consumer final : public boost::noncopyable {
                     condition.wait(lock);
                 }
 
-
                 size_t irreversible_block_state_size = irreversible_block_state_queue.size();
                 if( irreversible_block_state_size > 0 ){
                     irreversible_block_state_process_queue = std::move(irreversible_block_state_queue);
@@ -286,6 +285,8 @@ class consumer final : public boost::noncopyable {
                     db->consume_irreversible_block_state(bs, lock_db, condition, exit);
                     irreversible_block_state_process_queue.pop_front();
                 }
+
+                lock_db.unlock();
 
             } catch (fc::exception& e) {
                 elog("FC Exception while consuming block ${e}", ("e", e.to_string()));

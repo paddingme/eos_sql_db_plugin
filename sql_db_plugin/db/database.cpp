@@ -34,12 +34,10 @@ namespace eosio
     }
 
     void database::consume_block_state( const chain::block_state_ptr& bs) {
-        //TODO
         m_blocks_table->add(bs);
     }
 
     void database::consume_irreversible_block_state( const chain::block_state_ptr& bs ,boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition, boost::atomic<bool>& exit){
-        //TODO
         // ilog("run consume irreversible block");
         auto block_id = bs->id.str();
 
@@ -55,18 +53,19 @@ namespace eosio
             if( receipt.trx.contains<chain::packed_transaction>() ){
                 const auto& tm = chain::transaction_metadata(receipt.trx.get<chain::packed_transaction>());
 
+                //filter out system timer
                 if(tm.trx.actions.size()==1 && tm.trx.actions[0].name.to_string() == "onblock" ) continue ;
 
-                // for(auto actions : trx.actions){
-                //     m_actions_table->add(actions,trx.id(), bs->block->timestamp, m_action_filter_on);
-                // }
-
-                if(tm.trx.actions.size()==1 && std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),tm.trx.actions[0].account.to_string()) != m_contract_filter_out.end() ){
-                    continue;
+                //filter out attack contract
+                bool attack_check = true;
+                for(auto& act : tm.trx.actions ){
+                    if( std::find(m_contract_filter_out.begin(),m_contract_filter_out.end(),act.account.to_string()) == m_contract_filter_out.end() ){
+                        attack_check = false;
+                    }
                 }
+                if(attack_check) return;
 
-                trx_id_str = tm.trx.id().str();
-                
+                trx_id_str = tm.trx.id().str();   
 
             }else{
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
@@ -87,7 +86,6 @@ namespace eosio
                 } else if(exit) {
                     break;
                 }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
-                ilog( "${tx_id}",("tx_id",trx_id_str) );
 
             }while((!exit));
             
@@ -97,14 +95,10 @@ namespace eosio
     }
 
     void database::consume_transaction_metadata( const chain::transaction_metadata_ptr& tm ) {
-
-        // if(tm->trx.actions.size()==1 && tm->trx.actions[0].name.to_string() == "onblock" ) return ;
-
         m_transactions_table->add(tm->trx);
         for(auto actions : tm->trx.actions){
             m_actions_table->add(actions,tm->trx.id(), tm->trx.expiration, m_action_filter_on);
         }
-
     }
 
     void database::consume_transaction_trace( const chain::transaction_trace_ptr& tt) {
