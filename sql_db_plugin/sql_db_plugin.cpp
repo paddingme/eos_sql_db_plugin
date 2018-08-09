@@ -68,7 +68,7 @@ namespace eosio {
     }
 
     void sql_db_plugin_impl::applied_transaction( const chain::transaction_trace_ptr& tt ) {
-        if(!tt->scheduled){
+        if(!tt->scheduled && !tt->except){
             //filter out system timer action
             if(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"){
                 return ;
