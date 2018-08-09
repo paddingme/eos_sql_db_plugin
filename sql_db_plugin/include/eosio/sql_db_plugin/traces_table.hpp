@@ -22,7 +22,7 @@ class traces_table : public mysql_table {
 
         void add( const chain::transaction_trace_ptr& );
         std::string list( string, chain::block_timestamp_type );
-        void parse_traces(chain::transaction_trace trace);
+        void parse_traces(chain::transaction_trace trace, int64_t timestamp );
         auto add_data(chain::action action);
         void parse_actions( chain::action action );
         void dfs_inline_traces( vector<chain::action_trace> itc );

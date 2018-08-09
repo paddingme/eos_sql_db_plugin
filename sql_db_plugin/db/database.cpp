@@ -67,31 +67,30 @@ namespace eosio
 
                 trx_id_str = tm.trx.id().str();   
 
-                string trace_result;
-                do{
-                    trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
-                    if( !trace_result.empty() ){
-                        auto traces = fc::json::from_string(trace_result).as<chain::transaction_trace>();
-                        for(auto atc : traces.action_traces){
-                            if( atc.receipt.receiver == atc.act.account ){
-                                const auto timestamp = std::chrono::seconds{bs->block->timestamp.operator fc::time_point().sec_since_epoch()}.count();
-                                m_actions_table->add(atc.act, trx_id_str, timestamp, m_action_filter_on);
-                            }
-                        }
-                        // ilog("${result}",("result",traces));
-                        m_traces_table->parse_traces(traces);
-                        break;
-                    } else if(exit) {
-                        break;
-                    }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
+                // string trace_result;
+                // do{
+                //     trace_result = m_traces_table->list(trx_id_str, bs->block->timestamp);
+                //     if( !trace_result.empty() ){
+                //         auto traces = fc::json::from_string(trace_result).as<chain::transaction_trace>();
+                //         for(auto atc : traces.action_traces){
+                //             if( atc.receipt.receiver == atc.act.account ){
+                //                 const auto timestamp = std::chrono::seconds{bs->block->timestamp.operator fc::time_point().sec_since_epoch()}.count();
+                //                 m_actions_table->add(atc.act, trx_id_str, timestamp, m_action_filter_on);
+                //             }
+                //         }
+                //         // ilog("${result}",("result",traces));
+                //         m_traces_table->parse_traces(traces);
+                //         break;
+                //     } else if(exit) {
+                //         break;
+                //     }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
 
-                }while((!exit));
+                // }while((!exit));
 
             } else {
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
-                m_traces_table->add_scheduled_transaction(trx_id_str,bs->block->timestamp);
             }       
-
+            m_traces_table->add_scheduled_transaction(trx_id_str,bs->block->timestamp);
         }
 
     }
@@ -104,33 +103,28 @@ namespace eosio
     }
 
     void database::consume_transaction_trace( const chain::transaction_trace_ptr& tt, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition, boost::atomic<bool>& exit ) {
-        if(tt->scheduled || tt->except){
-            do{
-                string tx_id;
-                int64_t timestamp;
+        do{
+            string tx_id;
+            int64_t timestamp;
 
-                auto trx_id_str = tt->id.str();
-                m_traces_table->get_scheduled_transaction(trx_id_str,tx_id,timestamp);
-                if( !tx_id.empty() ){
-                    
-                    if(!tt->except) {
-                        for(auto atc : tt->action_traces){
-                            if( atc.receipt.receiver == atc.act.account ){
-                                m_actions_table->add(atc.act, trx_id_str, timestamp, m_action_filter_on);
-                            }
+            auto trx_id_str = tt->id.str();
+            m_traces_table->get_scheduled_transaction(trx_id_str,tx_id,timestamp);
+            if( !tx_id.empty() ){
+                
+                if(!tt->except) {
+                    for(auto atc : tt->action_traces){
+                        if( atc.receipt.receiver == atc.act.account ){
+                            m_actions_table->add(atc.act, trx_id_str, timestamp, m_action_filter_on);
                         }
-                        m_traces_table->parse_traces(*tt);
-                    }//else ilog("wrong transaction");
+                    }
+                    m_traces_table->parse_traces(*tt,timestamp);
+                }//else ilog("wrong transaction");
+                break;
+            } else if(exit) {
+                break;
+            }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
 
-                    break;
-                } else if(exit) {
-                    break;
-                }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
-
-            }while((!exit));
-        }else{
-            m_traces_table->add(tt);
-        }
+        }while((!exit));
     }
 
     const std::string database::block_states_col = "block_states";

@@ -66,7 +66,8 @@ namespace eosio {
         return data;
     }
 
-    void traces_table::parse_traces(chain::transaction_trace trace){
+    void traces_table::parse_traces(chain::transaction_trace trace, int64_t timestamp){
+        block_timestamp = timestamp;
         dfs_inline_traces( trace.action_traces );    
     }
 
