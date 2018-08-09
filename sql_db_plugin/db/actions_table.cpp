@@ -9,7 +9,7 @@ namespace eosio {
 
     }
 
-    void actions_table::add(chain::action action, std::string transaction_id, chain::block_timestamp_type block_time, std::vector<std::string> filter_out) {
+    void actions_table::add(chain::action action, std::string transaction_id, int64_t timestamp, std::vector<std::string> filter_out) {
 
         if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
 
@@ -19,7 +19,6 @@ namespace eosio {
         std::string abi_def_account;
         chain::abi_serializer abis;
         soci::indicator ind;
-        const auto timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
 
         string json = add_data(action);
         system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();

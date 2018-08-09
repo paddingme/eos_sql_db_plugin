@@ -68,19 +68,21 @@ namespace eosio {
     }
 
     void sql_db_plugin_impl::applied_transaction( const chain::transaction_trace_ptr& tt ) {
-        //filter out system timer action
-        if(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"){
-            return ;
-        }
-
-        //filter out attack contract
-        bool attack_check = true;
-        for(auto& action_trace : tt->action_traces ){
-            if(!filter_out_contract(action_trace.act.account.to_string()) ){
-                attack_check = false;
+        if(!tt->scheduled){
+            //filter out system timer action
+            if(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"){
+                return ;
             }
-        }
-        if(attack_check) return;   
+
+            //filter out attack contract
+            bool attack_check = true;
+            for(auto& action_trace : tt->action_traces ){
+                if(!filter_out_contract(action_trace.act.account.to_string()) ){
+                    attack_check = false;
+                }
+            }
+            if(attack_check) return; 
+        }  
 
         handler->push_transaction_trace(tt);
     }
@@ -146,6 +148,7 @@ namespace eosio {
                 db->wipe();
             }
         }
+        //test demo
     //    string str ="{\"id\":\"0002e445f404a8000f46f99180aa603f739ffee1f048198c858dd9d6e0e11d80\",\"block_num\":189509,\"header\":{\"timestamp\":\"2018-06-11T13:17:23.500\",\"producer\":\"genesisblock\",\"confirmed\":0,\"previous\":\"0002e44461e972fa55d1379c454cd3bb611245051662bda1dea4f4cd5a280a8c\",\"transaction_mroot\":\"39720cec2e14c75a72d05eb408ba2f58c9e37f73b8a85ee96dfc7b215f9968e4\",\"action_mroot\":\"5f3432fcd82ac56e12f4ae8bc113dada3364fe1da9cf08f4fce784d189d65a8b\",\"schedule_version\":1,\"header_extensions\":[],\"producer_signature\":\"SIG_K1_KkxNojxCKFUWDzvPhypNVXTtAYGThJogLLRGPgyVcVG3nh8ZkpbSpLxo9wb5yKsg7ZZLwcM2jtz74ysQaiP4mj7fhBHHh2\"},\"dpos_proposed_irreversible_blocknum\":189509,\"dpos_irreversible_blocknum\":189508,\"bft_irreversible_blocknum\":0,\"pending_schedule_lib_num\":12149,\"pending_schedule_hash\":\"c43882d5411af19d8596d5d835b3f4bd6a7fd36cc4c7fb55942ef11f8d1473b6\",\"pending_schedule\":{\"version\":1,\"producers\":[]},\"active_schedule\":{\"version\":1,\"producers\":[{\"producer_name\":\"genesisblock\",\"block_signing_key\":\"EOS8Yid3mE5bwWMvGGKYEDxFRGHostu5xCzFanyJP1UdgZ5mpPdwZ\"}]},\"blockroot_merkle\":{\"_active_nodes\":[\"2aa864d054eb9820db3e7d5eddb78022f385a963ba83be29f064e001f9c1339c\",\"e11c0abb64f0932b7b723c31764d308f32b7ddd090c61dfed141151bdc2d77df\",\"500096b184c6539387233b549bf46f045a810bf331e301bb4669d47700a68561\",\"f20243e9c77f41b0336f7d85f177446ec2b55c50b8b0fe7a0935194481e015af\",\"4b3d3bc2cf56b95fed65682df162175f3215f1bba9791b3d0fea5bfbaabb8281\",\"d4cc4e3c4635a50dcb7f9e091da8555deaba4ea2707cbebec5246cb2939df967\",\"827270b90af501d41051054f541ec063dfbab4e4a2eb4d6f85ffac575df777f0\",\"f094a95bd103d8e247452fc50b76d83f56cf4fac9d003a3f3580a8eec369705b\"],\"_node_count\":189508},\"producer_to_last_produced\":[[\"eosio\",12150],[\"genesisblock\",189509]],\"producer_to_last_implied_irb\":[[\"genesisblock\",189508]],\"block_signing_key\":\"EOS8Yid3mE5bwWMvGGKYEDxFRGHostu5xCzFanyJP1UdgZ5mpPdwZ\",\"confirm_count\":[],\"confirmations\":[],\"block\":{\"timestamp\":\"2018-06-11T13:17:23.500\",\"producer\":\"genesisblock\",\"confirmed\":0,\"previous\":\"0002e44461e972fa55d1379c454cd3bb611245051662bda1dea4f4cd5a280a8c\",\"transaction_mroot\":\"39720cec2e14c75a72d05eb408ba2f58c9e37f73b8a85ee96dfc7b215f9968e4\",\"action_mroot\":\"5f3432fcd82ac56e12f4ae8bc113dada3364fe1da9cf08f4fce784d189d65a8b\",\"schedule_version\":1,\"header_extensions\":[],\"producer_signature\":\"SIG_K1_KkxNojxCKFUWDzvPhypNVXTtAYGThJogLLRGPgyVcVG3nh8ZkpbSpLxo9wb5yKsg7ZZLwcM2jtz74ysQaiP4mj7fhBHHh2\",\"transactions\":[{\"status\":\"executed\",\"cpu_usage_us\":566,\"net_usage_words\":15,\"trx\":[1,{\"signatures\":[\"SIG_K1_K273pLxLGCwtY5ioeZhb1ym4CYg6ukYTnV6YgquftjxvjRYXYcNQThxQ4fGcEyQTkjpiRzCjYMhffZq6pphEyFrvd5GAB9\"],\"compression\":\"none\",\"packed_context_free_data\":\"00\",\"packed_trx\":\"81761e5b42e42284cb3e00000000010000000000ea30550000000000a032dd01a01861fa4c93896200000000a8ed323219a01861fa4c938962000000000000000001e0b3dbe632ec305500\"}]}],\"block_extensions\":[]},\"validated\":false,\"in_current_chain\":false}";
     //    auto bs = fc::json::from_string(str).as<chain::block_state>();
     //     for(auto& receipt : bs.block->transactions) {
@@ -160,8 +163,30 @@ namespace eosio {
     //         }
 
     //     }
-    //     auto traces = fc::json::from_string("{\"id\":\"37f6a03c467e3e53c80075fe4b6db51eec28b68c2ddb6fde579f6457e2ed695e\",\"receipt\":{\"status\":\"executed\",\"cpu_usage_us\":566,\"net_usage_words\":15},\"elapsed\":348,\"net_usage\":120,\"scheduled\":false,\"action_traces\":[{\"receipt\":{\"receiver\":\"eosio\",\"act_digest\":\"ab084b17c4118773578eb25349c404e9eb697c4594f9a6266a0b85ca856358f8\",\"global_sequence\":2735883,\"recv_sequence\":1362926,\"auth_sequence\":[[\"ge4tanbug4ge\",2]],\"code_sequence\":4,\"abi_sequence\":5},\"act\":{\"account\":\"eosio\",\"name\":\"vote\",\"authorization\":[{\"actor\":\"ge4tanbug4ge\",\"permission\":\"active\"}],\"data\":\"a01861fa4c938962000000000000000001e0b3dbe632ec3055\"},\"elapsed\":307,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"37f6a03c467e3e53c80075fe4b6db51eec28b68c2ddb6fde579f6457e2ed695e\",\"inline_traces\":[]}],\"failed_dtrx_trace\":null}").as<chain::transaction_trace>();
-    //     db->m_traces_table->parse_traces(traces);
+        // auto traces = fc::json::from_string("{\"id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"receipt\":{\"status\":\"executed\",\"cpu_usage_us\":1597,\"net_usage_words\":0},\"elapsed\":1794,\"net_usage\":0,\"scheduled\":true,\"action_traces\":[{\"receipt\":{\"receiver\":\"eosio\",\"act_digest\":\"a5358e257888c404f47f3ed18448d266213dbea5ceca00a1984648d6d3795cb2\",\"global_sequence\":4180016,\"recv_sequence\":2472726,\"auth_sequence\":[[\"gm4tgmrxgyge\",30]],\"code_sequence\":4,\"abi_sequence\":5},\"act\":{\"account\":\"eosio\",\"name\":\"refund\",\"authorization\":[{\"actor\":\"gm4tgmrxgyge\",\"permission\":\"active\"}],\"data\":\"a09867fd4a968964\"},\"elapsed\":1191,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"inline_traces\":[{\"receipt\":{\"receiver\":\"eosio.token\",\"act_digest\":\"6b69f9e0c78a06fafeda46df1a27472d0ff2dabd738928d4fc63152fa6821622\",\"global_sequence\":4180017,\"recv_sequence\":727836,\"auth_sequence\":[[\"eosio.stake\",3]],\"code_sequence\":1,\"abi_sequence\":1},\"act\":{\"account\":\"eosio.token\",\"name\":\"transfer\",\"authorization\":[{\"actor\":\"eosio.stake\",\"permission\":\"active\"}],\"data\":\"0014341903ea3055a09867fd4a968964605af4050000000004454f530000000007756e7374616b65\"},\"elapsed\":544,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"inline_traces\":[{\"receipt\":{\"receiver\":\"eosio.stake\",\"act_digest\":\"6b69f9e0c78a06fafeda46df1a27472d0ff2dabd738928d4fc63152fa6821622\",\"global_sequence\":4180018,\"recv_sequence\":177276,\"auth_sequence\":[[\"eosio.stake\",4]],\"code_sequence\":1,\"abi_sequence\":1},\"act\":{\"account\":\"eosio.token\",\"name\":\"transfer\",\"authorization\":[{\"actor\":\"eosio.stake\",\"permission\":\"active\"}],\"data\":\"0014341903ea3055a09867fd4a968964605af4050000000004454f530000000007756e7374616b65\"},\"elapsed\":5,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"inline_traces\":[]},{\"receipt\":{\"receiver\":\"gm4tgmrxgyge\",\"act_digest\":\"6b69f9e0c78a06fafeda46df1a27472d0ff2dabd738928d4fc63152fa6821622\",\"global_sequence\":4180019,\"recv_sequence\":10,\"auth_sequence\":[[\"eosio.stake\",5]],\"code_sequence\":1,\"abi_sequence\":1},\"act\":{\"account\":\"eosio.token\",\"name\":\"transfer\",\"authorization\":[{\"actor\":\"eosio.stake\",\"permission\":\"active\"}],\"data\":\"0014341903ea3055a09867fd4a968964605af4050000000004454f530000000007756e7374616b65\"},\"elapsed\":3,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"inline_traces\":[]}]}]}],\"failed_dtrx_trace\":null}\"hostname\":\"\",\"thread_name\":\"thread-0\",\"timestamp\":\"2018-08-06T10:19:05.128\"},\"format\":\"assertion failure with message: ${s}\",\"data\":{\"s\":\"refund is not available yet\"}},{\"context\":{\"level\":\"warn\",\"file\":\"apply_context.cpp\",\"line\":61,\"method\":\"exec_one\",\"hostname\":\"\",\"thread_name\":\"thread-0\",\"timestamp\":\"2018-08-06T10:19:05.129\"},\"format\":\"pending console output: ${console}\",\"data\":{\"console\":\"\"}}]}}\"code_sequence\":1,\"abi_sequence\":1},\"act\":{\"account\":\"eosio.token\",\"name\":\"transfer\",\"authorization\":[{\"actor\":\"eosio.stake\",\"permission\":\"active\"}],\"data\":\"0014341903ea3055a09867fd4a968964605af4050000000004454f530000000007756e7374616b65\"},\"elapsed\":5,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"inline_traces\":[]},{\"receipt\":{\"receiver\":\"gm4tgmrxgyge\",\"act_digest\":\"6b69f9e0c78a06fafeda46df1a27472d0ff2dabd738928d4fc63152fa6821622\",\"global_sequence\":4180019,\"recv_sequence\":10,\"auth_sequence\":[[\"eosio.stake\",5]],\"code_sequence\":1,\"abi_sequence\":1},\"act\":{\"account\":\"eosio.token\",\"name\":\"transfer\",\"authorization\":[{\"actor\":\"eosio.stake\",\"permission\":\"active\"}],\"data\":\"0014341903ea3055a09867fd4a968964605af4050000000004454f530000000007756e7374616b65\"},\"elapsed\":3,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"7b69b1e053d4edc6b3b7632283f1eca5e160845314b2ae6f298f47c196a14864\",\"inline_traces\":[]}]}]}],\"failed_dtrx_trace\":null}").as<chain::transaction_trace>();
+        // // db->m_traces_table->parse_traces(traces);
+        // ilog("what");
+
+        // string tx_id;
+        // int64_t timestamp;
+
+        // auto trx_id_str = traces.id.str();
+        // db->m_traces_table->get_scheduled_transaction(trx_id_str,tx_id,timestamp);
+        // ilog("${tx_id}:${timestamp}",("tx_id",tx_id)("timestamp",timestamp));
+        // if( !tx_id.empty() ){
+            
+        //     if(!traces.except) {
+        //         for(auto atc : traces.action_traces){
+        //             if( atc.receipt.receiver == atc.act.account ){
+        //                 db->m_actions_table->add(atc.act, trx_id_str, timestamp, action_filter_on);
+        //             }
+        //         }
+        //         db->m_traces_table->parse_traces(traces);
+        //     }else ilog("wrong transaction");
+        // } 
+
+        //test end
+       
            
 
         my->handler = std::make_unique<consumer>(std::move(db),queue_size);

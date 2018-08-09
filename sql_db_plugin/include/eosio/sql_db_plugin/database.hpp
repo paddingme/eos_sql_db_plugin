@@ -30,7 +30,7 @@ class database {
         void consume_irreversible_block_state( const chain::block_state_ptr& , boost::mutex::scoped_lock& , boost::condition_variable& condition,boost::atomic<bool>& exit);
 
         void consume_transaction_metadata( const chain::transaction_metadata_ptr& );
-        void consume_transaction_trace( const chain::transaction_trace_ptr& );
+        void consume_transaction_trace( const chain::transaction_trace_ptr&, boost::mutex::scoped_lock&, boost::condition_variable&, boost::atomic<bool>& );
 
         static const std::string block_states_col;
         static const std::string blocks_col;
@@ -39,7 +39,7 @@ class database {
         static const std::string actions_col;
         static const std::string accounts_col;
 
-    private:
+    public:
         // std::shared_ptr<soci::session> m_session;
         std::shared_ptr<soci_session_pool> m_session_pool;
         std::unique_ptr<actions_table> m_actions_table;

@@ -277,6 +277,21 @@ CREATE TABLE `votes` (
   UNIQUE KEY `idx_votes_voter` (`voter`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `scheduled_transaction`
+--
+
+DROP TABLE IF EXISTS `scheduled_transaction`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `scheduled_transaction` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `transaction_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '定时交易id',
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '块时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

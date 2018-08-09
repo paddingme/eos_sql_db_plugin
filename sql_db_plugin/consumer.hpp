@@ -55,7 +55,8 @@ class consumer final : public boost::noncopyable {
         boost::mutex mtx_blocks;
         boost::mutex mtx_traces;
         boost::mutex mtx_irreversible;
-        boost::mutex mtx_db;
+        boost::mutex mtx_wait_trace;
+        boost::mutex mtx_wait_irreversible;
         boost::condition_variable condition;
 
     };
@@ -229,9 +230,10 @@ class consumer final : public boost::noncopyable {
             //process trace
             while (!transaction_trace_process_queue.empty()) {
                 const auto& tt = transaction_trace_process_queue.front();
-
                 try{
-                    db->consume_transaction_trace(tt);
+                    boost::mutex::scoped_lock lock_db(mtx_traces);
+                    db->consume_transaction_trace(tt, lock_db, condition, exit);
+                    lock_db.unlock();
                 } catch (fc::exception& e) {
                     elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
                 } catch (std::exception& e) {
@@ -278,7 +280,7 @@ class consumer final : public boost::noncopyable {
                 ilog("irreversible draining queue, size: ${q}", ("q", irreversible_block_state_size));
             }
 
-            boost::mutex::scoped_lock lock_db(mtx_db);
+            boost::mutex::scoped_lock lock_db(mtx_traces);
             
             // process irreversible blocks
             while (!irreversible_block_state_process_queue.empty()) {

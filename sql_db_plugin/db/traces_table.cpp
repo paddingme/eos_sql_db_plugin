@@ -49,7 +49,7 @@ namespace eosio {
         }
 
         if(data.empty()){
-            wlog( "trace data is null. ${id}",("id",trace_id_str) );
+            // wlog( "trace data is null. ${id}",("id",trace_id_str) );
             return data;
         }
 
@@ -490,6 +490,60 @@ namespace eosio {
             
         }
         
+    }
+
+    void traces_table::add_scheduled_transaction(string transaction_id_str, chain::block_timestamp_type block_time){
+        auto m_session = m_session_pool->get_session();
+
+        const auto timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
+        try{
+            *m_session << "INSERT INTO scheduled_transaction( transaction_id, timestamp ) VALUES ( :tx_id, FROM_UNIXTIME(:ca) )",
+                soci::use(transaction_id_str),
+                soci::use(timestamp);
+                
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
+        } catch (std::exception e) {
+            wlog( "${e} ${id} ${timestamp}",("e",e.what())("id",transaction_id_str)("timestamp",timestamp) );
+        }catch(...){
+            wlog("insert scheduled transaction id failed. ${id}",("id",transaction_id_str));
+        }
+    }
+
+    void traces_table::get_scheduled_transaction(string transaction_id_str,string& tx_id, int64_t& timestamp){
+        auto m_session = m_session_pool->get_session();
+
+        try{
+            *m_session << " SELECT transaction_id, UNIX_TIMESTAMP(timestamp) FROM scheduled_transaction where transaction_id = :tx_id ",
+                soci::into(tx_id),
+                soci::into(timestamp),
+                soci::use(transaction_id_str);
+                
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
+        } catch (std::exception e) {
+            wlog( "${e} ${id} ${data}",("e",e.what())("id",transaction_id_str)("data",tx_id) );
+        }catch(...){
+            wlog("insert scheduled transaction id failed. ${id}",("id",transaction_id_str));
+        }
+
+        if(tx_id.empty()){
+            wlog( "scheduled transaction id is null. ${id}",("id",transaction_id_str) );
+            return ;
+        }
+
+        try{
+            *m_session << "DELETE FROM scheduled_transaction WHERE transaction_id = :id",soci::use(tx_id);
+        } catch(soci::mysql_soci_error e) {
+            wlog("soci::error: ${e}",("e",e.what()) );
+        } catch(std::exception e) {
+            wlog( "tx_id:${tx_id}",("tx_id",tx_id) );
+            wlog("${e}",("e",e.what()));
+        } catch(...){
+            wlog( "tx_id:${tx_id}",("tx_id",tx_id) );
+        }
+
+        return ;
     }
 
 } // namespace
