@@ -159,41 +159,41 @@ class consumer final : public boost::noncopyable {
     void consumer::run_blocks() {
         ilog("Consumer thread Start run_blocks");
         while (!exit) { 
-            try{
-                boost::mutex::scoped_lock lock(mtx_blocks);
-                while(block_state_queue.empty() && !exit){
-                    condition.wait(lock);
-                }
+            boost::mutex::scoped_lock lock(mtx_blocks);
+            while(block_state_queue.empty() && !exit){
+                condition.wait(lock);
+            }
 
-                size_t block_state_size = block_state_queue.size();
-                if( block_state_size > 0 ){
-                    block_state_process_queue = std::move(block_state_queue);
-                }
+            size_t block_state_size = block_state_queue.size();
+            if( block_state_size > 0 ){
+                block_state_process_queue = std::move(block_state_queue);
+            }
 
-                lock.unlock();
+            lock.unlock();
 
-                if( block_state_size > (queue_size * 0.75)) {
-                    wlog("reversible queue size: ${q}", ("q", block_state_size));
-                } else if (exit) {
-                    ilog("reversible draining queue, size: ${q}", ("q", block_state_size));
-                }          
+            if( block_state_size > (queue_size * 0.75)) {
+                wlog("reversible queue size: ${q}", ("q", block_state_size));
+            } else if (exit) {
+                ilog("reversible draining queue, size: ${q}", ("q", block_state_size));
+            }          
 
-                // process blocks
-                while (!block_state_process_queue.empty()) {
-                    const auto& bs = block_state_process_queue.front();
+            // process blocks
+            while (!block_state_process_queue.empty()) {
+                const auto& bs = block_state_process_queue.front();
+                try{
                     db->consume_block_state( bs );
-                    block_state_process_queue.pop_front();
-                }
+                } catch (fc::exception& e) {
+                    elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
+                } catch (std::exception& e) {
+                    elog("STD Exception while consuming block ${e}", ("e", e.what()));
+                } catch (...) {
+                    elog("Unknown exception while consuming block");
+                } 
+                block_state_process_queue.pop_front();
+            }
 
-                condition.notify_all();
-            } catch (fc::exception& e) {
-                elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
-            } catch (std::exception& e) {
-                elog("STD Exception while consuming block ${e}", ("e", e.what()));
-            } catch (...) {
-                elog("Unknown exception while consuming block");
-            }  
-
+            condition.notify_all();
+             
         }
         
         ilog("Consumer thread End run_blocks");
@@ -202,53 +202,55 @@ class consumer final : public boost::noncopyable {
     void consumer::run_traces() {
         ilog("Consumer thread Start run_traces");
         while (!exit) { 
-            try{
-                boost::mutex::scoped_lock lock(mtx_traces);
-                while(transaction_trace_queue.empty()&& !exit){
-                    condition.wait(lock);
-                }
+            boost::mutex::scoped_lock lock(mtx_traces);
+            while(transaction_trace_queue.empty()&& !exit){
+                condition.wait(lock);
+            }
 
-                // size_t transaction_metadata_size = transaction_metadata_queue.size();
-                // if( transaction_metadata_size > 0 ){
-                //     transaction_metadata_process_queue = std::move(transaction_metadata_queue);
-                // }
+            // size_t transaction_metadata_size = transaction_metadata_queue.size();
+            // if( transaction_metadata_size > 0 ){
+            //     transaction_metadata_process_queue = std::move(transaction_metadata_queue);
+            // }
 
-                size_t transaction_trace_size = transaction_trace_queue.size();
-                if( transaction_trace_size > 0 ){
-                    transaction_trace_process_queue = std::move(transaction_trace_queue);
-                }
+            size_t transaction_trace_size = transaction_trace_queue.size();
+            if( transaction_trace_size > 0 ){
+                transaction_trace_process_queue = std::move(transaction_trace_queue);
+            }
 
-                lock.unlock();
+            lock.unlock();
 
-                if( transaction_trace_size> (queue_size * 0.75)) {
-                    wlog("reversible queue size: ${q}", ("q", transaction_trace_size));
-                } else if (exit) {
-                    ilog("reversible draining queue, size: ${q}", ("q", transaction_trace_size));
-                }
+            if( transaction_trace_size> (queue_size * 0.75)) {
+                wlog("reversible queue size: ${q}", ("q", transaction_trace_size));
+            } else if (exit) {
+                ilog("reversible draining queue, size: ${q}", ("q", transaction_trace_size));
+            }
 
 
-                //process trace
-                while (!transaction_trace_process_queue.empty()) {
-                    const auto& tt = transaction_trace_process_queue.front();
+            //process trace
+            while (!transaction_trace_process_queue.empty()) {
+                const auto& tt = transaction_trace_process_queue.front();
+
+                try{
                     db->consume_transaction_trace(tt);
-                    transaction_trace_process_queue.pop_front();
-                }
+                } catch (fc::exception& e) {
+                    elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
+                } catch (std::exception& e) {
+                    elog("STD Exception while consuming block ${e}", ("e", e.what()));
+                } catch (...) {
+                    elog("Unknown exception while consuming block");
+                }  
 
-                // process transactions
-                // while (!transaction_metadata_process_queue.empty()) {
-                //     const auto& tm = transaction_metadata_process_queue.front();
-                //     db->consume_transaction_metadata(tm);
-                //     transaction_metadata_process_queue.pop_front();
-                // }             
+                transaction_trace_process_queue.pop_front();
+            }
 
-                condition.notify_all();
-            } catch (fc::exception& e) {
-                elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
-            } catch (std::exception& e) {
-                elog("STD Exception while consuming block ${e}", ("e", e.what()));
-            } catch (...) {
-                elog("Unknown exception while consuming block");
-            }  
+            // process transactions
+            // while (!transaction_metadata_process_queue.empty()) {
+            //     const auto& tm = transaction_metadata_process_queue.front();
+            //     db->consume_transaction_metadata(tm);
+            //     transaction_metadata_process_queue.pop_front();
+            // }             
+
+            condition.notify_all();
 
         }
         
@@ -258,43 +260,44 @@ class consumer final : public boost::noncopyable {
     void consumer::run_irreversible() {
         ilog("Consumer thread Start run_irreversible");
         while (!exit) { 
-            try{
-                boost::mutex::scoped_lock lock(mtx_irreversible);
-                while(irreversible_block_state_queue.empty() && !exit){
-                    condition.wait(lock);
-                }
+            boost::mutex::scoped_lock lock(mtx_irreversible);
+            while(irreversible_block_state_queue.empty() && !exit){
+                condition.wait(lock);
+            }
 
-                size_t irreversible_block_state_size = irreversible_block_state_queue.size();
-                if( irreversible_block_state_size > 0 ){
-                    irreversible_block_state_process_queue = std::move(irreversible_block_state_queue);
-                }
+            size_t irreversible_block_state_size = irreversible_block_state_queue.size();
+            if( irreversible_block_state_size > 0 ){
+                irreversible_block_state_process_queue = std::move(irreversible_block_state_queue);
+            }
 
-                lock.unlock();
+            lock.unlock();
 
-                if( irreversible_block_state_size > (queue_size * 0.75) ) {
-                    wlog("irreversible queue size: ${q}", ("q", irreversible_block_state_size));
-                } else if (exit) {
-                    ilog("irreversible draining queue, size: ${q}", ("q", irreversible_block_state_size));
-                }
+            if( irreversible_block_state_size > (queue_size * 0.75) ) {
+                wlog("irreversible queue size: ${q}", ("q", irreversible_block_state_size));
+            } else if (exit) {
+                ilog("irreversible draining queue, size: ${q}", ("q", irreversible_block_state_size));
+            }
 
-                boost::mutex::scoped_lock lock_db(mtx_db);
-                
-                // process irreversible blocks
-                while (!irreversible_block_state_process_queue.empty()) {
-                    const auto& bs = irreversible_block_state_process_queue.front();
+            boost::mutex::scoped_lock lock_db(mtx_db);
+            
+            // process irreversible blocks
+            while (!irreversible_block_state_process_queue.empty()) {
+                const auto& bs = irreversible_block_state_process_queue.front();
+
+                try{
                     db->consume_irreversible_block_state(bs, lock_db, condition, exit);
-                    irreversible_block_state_process_queue.pop_front();
-                }
+                } catch (fc::exception& e) {
+                    elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
+                } catch (std::exception& e) {
+                    elog("STD Exception while consuming block ${e}", ("e", e.what()));
+                } catch (...) {
+                    elog("Unknown exception while consuming block");
+                }  
 
-                lock_db.unlock();
+                irreversible_block_state_process_queue.pop_front();
+            }
 
-            } catch (fc::exception& e) {
-                elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
-            } catch (std::exception& e) {
-                elog("STD Exception while consuming block ${e}", ("e", e.what()));
-            } catch (...) {
-                elog("Unknown exception while consuming block");
-            }  
+            lock_db.unlock();
 
         }
         

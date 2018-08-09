@@ -24,7 +24,7 @@ namespace eosio {
         string json = add_data(action);
         system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
         string json_auth = fc::json::to_string(action.authorization);
-        // ilog("${to} , ${from} , ${receiver} , ${name}",("to",dataJson.to.to_string())("from",dataJson.from.to_string())("receiver",dataJson.receiver.to_string())("name",dataJson.name.to_string()) );
+        // ilog("${json} ${to} , ${from} , ${receiver} , ${name}",("json",json)("to",dataJson.to.to_string())("from",dataJson.from.to_string())("receiver",dataJson.receiver.to_string())("name",dataJson.name.to_string()) );
 
         if( std::find(filter_out.begin(), filter_out.end(), action.name.to_string())!=filter_out.end() ){
             try{
@@ -143,7 +143,7 @@ namespace eosio {
                     json_str = fc::json::to_string(binary_data);
                     return json_str;
                 }  catch (fc::exception& e) {
-                    elog("FC Exception ${e}", ("e", e.to_string()));
+                    elog("FC Exception in ${e}", ("e", e.to_string()));
                 } catch(...) {
                     wlog("unable to convert account abi to abi_def for ${s}::${n} :${abi}",("s",action.account)("n",action.name)("abi",action.data));
                     wlog("analysis data failed");

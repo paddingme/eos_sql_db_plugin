@@ -88,6 +88,7 @@ namespace eosio {
         std::string abi_def_account;
         chain::abi_serializer abis;
         soci::indicator ind;
+        fc::variant abi_data;
 
         try{
             *m_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
@@ -107,6 +108,9 @@ namespace eosio {
             } else {
                 return; // no ABI no party. Should we still store it?
             }
+
+            abis.set_abi(abi, max_serialization_time);
+            abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data, max_serialization_time);
         } catch(fc::exception& e) {
             wlog("transfer data wrong ${e}",("e",e.what()));
             return;
@@ -116,9 +120,6 @@ namespace eosio {
         }
         
 
-        abis.set_abi(abi, max_serialization_time);
-
-        auto abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data, max_serialization_time);
 
         if( action.account == chain::config::system_account_name ){
 

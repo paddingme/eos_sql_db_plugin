@@ -56,58 +56,12 @@ namespace eosio {
     };
 
     void sql_db_plugin_impl::accepted_block( const chain::block_state_ptr& bs ) {
-        if(bs->trxs.size()!=0){
-            ilog("trx.size ${size}",("size",bs->trxs.size()));
-            // for(auto& trx : bs->trxs){
-            //     ilog("${result}",("result",trx->trx));
-            // }
-        }
         handler->push_block_state(bs);
     }
 
     void sql_db_plugin_impl::applied_irreversible_block( const chain::block_state_ptr& bs) {
-        // for(auto& transaction : bs->block->transactions){
-        //     ilog("${result}",("result",fc::json::to_string(fc::raw::unpack<chain::transaction>(transaction.trx.get<chain::packed_transaction>().get_raw_transaction()))));
-        // }
-        // if(bs->trxs.size()!=0){
-        //     ilog("trx.size ${size}",("size",bs->trxs.size()));
-        // }
         handler->push_irreversible_block_state(bs);
     }
-
-    // void sql_db_plugin_impl::applied_irreversible_block_for_traces( const chain::block_state_ptr& bs) {
-    //     for(auto& receipt : bs->block->transactions){
-    //         string trx_id_str;
-    //         if( receipt.trx.contains<chain::packed_transaction>() ){
-    //             const auto& trx = fc::raw::unpack<chain::transaction>( receipt.trx.get<chain::packed_transaction>().get_raw_transaction() );
-                
-    //             //filter out system timer action
-    //             if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
-
-    //             if( trx.actions[0].name.to_string()=="refund" ){
-    //                 ilog("irr 222");
-    //                 ilog(trx.id().str());
-    //             }
-    //             //filter out attack contract
-    //             bool attack_check = true;
-    //             for(auto& action : trx.actions ){
-    //                 if(!filter_out_contract(action.account.to_string()) ){
-    //                     attack_check = false;
-    //                 }
-    //             }
-                
-    //             if(attack_check) continue;
-    //             if( trx.actions[0].name.to_string()=="refund" ){
-    //                 ilog("irr 222");
-    //                 ilog(trx.id().str());
-    //             }
-    //             trx_id_str = trx.id().str();
-    //             tx_id_block_time traces_params{trx_id_str,bs->block->timestamp};
-    //             handler->push_irreversible_block_for_traces_state( traces_params );
-    //         }
-    //     }
-
-    // }
 
     void sql_db_plugin_impl::accepted_transaction( const chain::transaction_metadata_ptr& tm ) {
         handler->push_transaction_metadata(tm);
@@ -126,8 +80,7 @@ namespace eosio {
                 attack_check = false;
             }
         }
-        if(attack_check) return;
-        
+        if(attack_check) return;   
 
         handler->push_transaction_trace(tt);
     }
@@ -193,6 +146,23 @@ namespace eosio {
                 db->wipe();
             }
         }
+    //    string str ="{\"id\":\"0002e445f404a8000f46f99180aa603f739ffee1f048198c858dd9d6e0e11d80\",\"block_num\":189509,\"header\":{\"timestamp\":\"2018-06-11T13:17:23.500\",\"producer\":\"genesisblock\",\"confirmed\":0,\"previous\":\"0002e44461e972fa55d1379c454cd3bb611245051662bda1dea4f4cd5a280a8c\",\"transaction_mroot\":\"39720cec2e14c75a72d05eb408ba2f58c9e37f73b8a85ee96dfc7b215f9968e4\",\"action_mroot\":\"5f3432fcd82ac56e12f4ae8bc113dada3364fe1da9cf08f4fce784d189d65a8b\",\"schedule_version\":1,\"header_extensions\":[],\"producer_signature\":\"SIG_K1_KkxNojxCKFUWDzvPhypNVXTtAYGThJogLLRGPgyVcVG3nh8ZkpbSpLxo9wb5yKsg7ZZLwcM2jtz74ysQaiP4mj7fhBHHh2\"},\"dpos_proposed_irreversible_blocknum\":189509,\"dpos_irreversible_blocknum\":189508,\"bft_irreversible_blocknum\":0,\"pending_schedule_lib_num\":12149,\"pending_schedule_hash\":\"c43882d5411af19d8596d5d835b3f4bd6a7fd36cc4c7fb55942ef11f8d1473b6\",\"pending_schedule\":{\"version\":1,\"producers\":[]},\"active_schedule\":{\"version\":1,\"producers\":[{\"producer_name\":\"genesisblock\",\"block_signing_key\":\"EOS8Yid3mE5bwWMvGGKYEDxFRGHostu5xCzFanyJP1UdgZ5mpPdwZ\"}]},\"blockroot_merkle\":{\"_active_nodes\":[\"2aa864d054eb9820db3e7d5eddb78022f385a963ba83be29f064e001f9c1339c\",\"e11c0abb64f0932b7b723c31764d308f32b7ddd090c61dfed141151bdc2d77df\",\"500096b184c6539387233b549bf46f045a810bf331e301bb4669d47700a68561\",\"f20243e9c77f41b0336f7d85f177446ec2b55c50b8b0fe7a0935194481e015af\",\"4b3d3bc2cf56b95fed65682df162175f3215f1bba9791b3d0fea5bfbaabb8281\",\"d4cc4e3c4635a50dcb7f9e091da8555deaba4ea2707cbebec5246cb2939df967\",\"827270b90af501d41051054f541ec063dfbab4e4a2eb4d6f85ffac575df777f0\",\"f094a95bd103d8e247452fc50b76d83f56cf4fac9d003a3f3580a8eec369705b\"],\"_node_count\":189508},\"producer_to_last_produced\":[[\"eosio\",12150],[\"genesisblock\",189509]],\"producer_to_last_implied_irb\":[[\"genesisblock\",189508]],\"block_signing_key\":\"EOS8Yid3mE5bwWMvGGKYEDxFRGHostu5xCzFanyJP1UdgZ5mpPdwZ\",\"confirm_count\":[],\"confirmations\":[],\"block\":{\"timestamp\":\"2018-06-11T13:17:23.500\",\"producer\":\"genesisblock\",\"confirmed\":0,\"previous\":\"0002e44461e972fa55d1379c454cd3bb611245051662bda1dea4f4cd5a280a8c\",\"transaction_mroot\":\"39720cec2e14c75a72d05eb408ba2f58c9e37f73b8a85ee96dfc7b215f9968e4\",\"action_mroot\":\"5f3432fcd82ac56e12f4ae8bc113dada3364fe1da9cf08f4fce784d189d65a8b\",\"schedule_version\":1,\"header_extensions\":[],\"producer_signature\":\"SIG_K1_KkxNojxCKFUWDzvPhypNVXTtAYGThJogLLRGPgyVcVG3nh8ZkpbSpLxo9wb5yKsg7ZZLwcM2jtz74ysQaiP4mj7fhBHHh2\",\"transactions\":[{\"status\":\"executed\",\"cpu_usage_us\":566,\"net_usage_words\":15,\"trx\":[1,{\"signatures\":[\"SIG_K1_K273pLxLGCwtY5ioeZhb1ym4CYg6ukYTnV6YgquftjxvjRYXYcNQThxQ4fGcEyQTkjpiRzCjYMhffZq6pphEyFrvd5GAB9\"],\"compression\":\"none\",\"packed_context_free_data\":\"00\",\"packed_trx\":\"81761e5b42e42284cb3e00000000010000000000ea30550000000000a032dd01a01861fa4c93896200000000a8ed323219a01861fa4c938962000000000000000001e0b3dbe632ec305500\"}]}],\"block_extensions\":[]},\"validated\":false,\"in_current_chain\":false}";
+    //    auto bs = fc::json::from_string(str).as<chain::block_state>();
+    //     for(auto& receipt : bs.block->transactions) {
+    //         string trx_id_str;
+    //         if( receipt.trx.contains<chain::packed_transaction>() ){
+    //             const auto& tm = chain::transaction_metadata(receipt.trx.get<chain::packed_transaction>());
+
+    //             trx_id_str = tm.trx.id().str();   
+    //             for(auto atc : tm.trx.actions){
+    //                 db->m_actions_table->add(atc, trx_id_str,bs.block->timestamp , action_filter_on);
+    //             }
+    //         }
+
+    //     }
+    //     auto traces = fc::json::from_string("{\"id\":\"37f6a03c467e3e53c80075fe4b6db51eec28b68c2ddb6fde579f6457e2ed695e\",\"receipt\":{\"status\":\"executed\",\"cpu_usage_us\":566,\"net_usage_words\":15},\"elapsed\":348,\"net_usage\":120,\"scheduled\":false,\"action_traces\":[{\"receipt\":{\"receiver\":\"eosio\",\"act_digest\":\"ab084b17c4118773578eb25349c404e9eb697c4594f9a6266a0b85ca856358f8\",\"global_sequence\":2735883,\"recv_sequence\":1362926,\"auth_sequence\":[[\"ge4tanbug4ge\",2]],\"code_sequence\":4,\"abi_sequence\":5},\"act\":{\"account\":\"eosio\",\"name\":\"vote\",\"authorization\":[{\"actor\":\"ge4tanbug4ge\",\"permission\":\"active\"}],\"data\":\"a01861fa4c938962000000000000000001e0b3dbe632ec3055\"},\"elapsed\":307,\"cpu_usage\":0,\"console\":\"\",\"total_cpu_usage\":0,\"trx_id\":\"37f6a03c467e3e53c80075fe4b6db51eec28b68c2ddb6fde579f6457e2ed695e\",\"inline_traces\":[]}],\"failed_dtrx_trace\":null}").as<chain::transaction_trace>();
+    //     db->m_traces_table->parse_traces(traces);
+           
 
         my->handler = std::make_unique<consumer>(std::move(db),queue_size);
         chain_plugin* chain_plug = app().find_plugin<chain_plugin>();

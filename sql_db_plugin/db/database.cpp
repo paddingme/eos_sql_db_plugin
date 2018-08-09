@@ -87,6 +87,7 @@ namespace eosio
                     break;
                 }else condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
 
+
             }while((!exit));
             
 
