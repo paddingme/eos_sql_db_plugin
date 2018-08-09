@@ -104,7 +104,7 @@ namespace eosio
     }
 
     void database::consume_transaction_trace( const chain::transaction_trace_ptr& tt, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition, boost::atomic<bool>& exit ) {
-        if(tt->scheduled){
+        if(tt->scheduled || tt->except){
             do{
                 string tx_id;
                 int64_t timestamp;
