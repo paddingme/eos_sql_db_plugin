@@ -60,7 +60,6 @@ namespace eosio
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
                 m_transactions_table->add_scheduled_or_except(trx_id_str,bs->block->timestamp,block_num);
             }       
-            ilog("run blocks");
         }
     }
 
@@ -107,7 +106,7 @@ namespace eosio
 
     void database::consume_transaction_trace( const chain::transaction_trace_ptr& tt, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition, boost::atomic<bool>& exit ) {
         auto trx_id_str = tt->id.str();
-        ilog("${trx_id_str}",("trx_id_str",trx_id_str));
+        // ilog("${trx_id_str}",("trx_id_str",trx_id_str));
         do{
             string tx_id;
             int64_t timestamp;
