@@ -194,17 +194,17 @@ namespace eosio {
         auto& chain = chain_plug->chain();
 
         my->accepted_block_connection.emplace(chain.accepted_block.connect([this]( const chain::block_state_ptr& bs){
-            // my->accepted_block(bs);
+            my->accepted_block(bs);
         } ));   
 
         my->irreversible_block_connection.emplace(chain.irreversible_block.connect([this]( const chain::block_state_ptr& bs){
-            // my->applied_irreversible_block(bs);
+            my->applied_irreversible_block(bs);
         } ));  
 
         my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
             // if(!(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"))
                 // ilog("${result}",("result",fc::json::to_string(tt)));
-            // my->applied_transaction(tt);
+            my->applied_transaction(tt);
         } ));
 
         // my->accepted_transaction_connection.emplace(chain.accepted_transaction.connect([this](const chain::transaction_metadata_ptr& tm){
