@@ -11,7 +11,7 @@ namespace eosio {
 
     void actions_table::add(chain::action action, std::string transaction_id, int64_t timestamp, std::vector<std::string> filter_out) {
 
-        if(action.name.to_string() == "onblock") return ; //system contract abi haven't onblock, so we could get abi_data.
+        if(action.name.to_string() == "onblock" || action.account.to_string() == "eosio.null") return ; //system contract abi haven't onblock, so we could get abi_data.
 
         auto m_session = m_session_pool->get_session();
 

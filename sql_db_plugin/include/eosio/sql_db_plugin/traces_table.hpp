@@ -22,14 +22,10 @@ class traces_table : public mysql_table {
 
         void add( const chain::transaction_trace_ptr& );
         std::string list( string, chain::block_timestamp_type );
-        void parse_traces(chain::transaction_trace trace, int64_t timestamp );
-        auto add_data(chain::action action);
-        void parse_actions( chain::action action );
-        void dfs_inline_traces( vector<chain::action_trace> itc );
-        // void irreversible_set( std::string block_id, bool irreversible, std::string transaction_id_str );
-        // bool find_transaction( std::string transaction_id_str);
-        void add_scheduled_transaction(string transaction_id_str, chain::block_timestamp_type block_time);
-        void get_scheduled_transaction(string transaction_id_str,string& tx_id, int64_t& timestamp);
+        void parse_traces(chain::transaction_trace, int64_t );
+        auto add_data( chain::action );
+        void parse_actions( chain::action );
+        void dfs_inline_traces( vector<chain::action_trace> );
 
         long long block_timestamp;
 

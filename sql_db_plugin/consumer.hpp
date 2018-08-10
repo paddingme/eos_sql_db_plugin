@@ -49,7 +49,7 @@ class consumer final : public boost::noncopyable {
         std::unique_ptr<database> db;
         size_t queue_size;
         boost::atomic<bool> exit{false};
-        boost::thread consume_blocks;
+        boost::thread consume_thread_run_blocks;
         boost::thread consume_thread_run_traces;
         boost::thread consume_thread_run_irreversible;
         boost::mutex mtx_blocks;
@@ -65,7 +65,7 @@ class consumer final : public boost::noncopyable {
         db(std::move(db)),
         queue_size(queue_size),
         exit(false),
-        // consume_thread_run_blocks(boost::thread([&]{this->run_blocks();})),
+        consume_thread_run_blocks(boost::thread([&]{this->run_blocks();})),
         consume_thread_run_traces(boost::thread([&]{this->run_traces();})),
         consume_thread_run_irreversible(boost::thread([&]{this->run_irreversible();}))
         { }
@@ -73,7 +73,7 @@ class consumer final : public boost::noncopyable {
     consumer::~consumer() {
         exit = true;
         condition.notify_all();
-        // consume_thread_run_blocks.join();
+        consume_thread_run_blocks.join();
         consume_thread_run_traces.join();
         consume_thread_run_irreversible.join();
     }
@@ -81,7 +81,7 @@ class consumer final : public boost::noncopyable {
     void consumer::shutdown() {
         exit = true;
         condition.notify_all();
-        // consume_thread_run_blocks.join();
+        consume_thread_run_blocks.join();
         consume_thread_run_traces.join();
         consume_thread_run_irreversible.join();
     }

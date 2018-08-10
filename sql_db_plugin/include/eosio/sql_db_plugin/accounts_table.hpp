@@ -12,9 +12,9 @@ class accounts_table  : public mysql_table {
         accounts_table(std::shared_ptr<soci::session> session);
         accounts_table(std::shared_ptr<soci_session_pool> session_pool);
 
-        void add(string name);
-        bool exist(string name);
-        void add_eosio(string name,string abi);
+        void add( string );
+        bool exist( string );
+        void add_eosio( string, string );
 
     private:
         // std::shared_ptr<soci::session> m_session;

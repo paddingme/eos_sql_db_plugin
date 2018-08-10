@@ -15,7 +15,7 @@ class blocks_table : public mysql_table {
 
         // void add(chain::signed_block_ptr block);
         void add( const chain::block_state_ptr& );
-        bool irreversible_set( std::string block_id, bool irreversible );
+        bool irreversible_set( std::string, bool );
 
     private:
         // std::shared_ptr<soci::session> m_session;

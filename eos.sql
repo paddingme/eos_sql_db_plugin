@@ -246,7 +246,7 @@ DROP TABLE IF EXISTS `transactions`;
 CREATE TABLE `transactions` (
   `tx_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `block_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',
+  `block_num` bigint(20) NOT NULL DEFAULT '0',
   `ref_block_num` bigint(20) NOT NULL DEFAULT '0',
   `ref_block_prefix` bigint(20) NOT NULL DEFAULT '0',
   `expiration` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -257,7 +257,7 @@ CREATE TABLE `transactions` (
   `irreversible` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`tx_id`),
   UNIQUE KEY `idx_transactions_id` (`id`),
-  KEY `transactions_block_id` (`block_id`)
+  KEY `transactions_block_num` (`block_num`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -277,22 +277,6 @@ CREATE TABLE `votes` (
   UNIQUE KEY `idx_votes_voter` (`voter`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `scheduled_transaction`
---
-
-DROP TABLE IF EXISTS `scheduled_transaction`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
- SET character_set_client = utf8mb4 ;
-CREATE TABLE `scheduled_transaction` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `transaction_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '定时交易id',
-  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '块时间',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
