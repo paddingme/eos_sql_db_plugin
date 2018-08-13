@@ -87,8 +87,7 @@ namespace eosio {
         auto m_session = m_session_pool->get_session();
 
         try{
-            *m_session << "UPDATE transactions SET block_id = :block_id, irreversible = :irreversible WHERE id = :id ",
-                soci::use(block_id),
+            *m_session << "UPDATE transactions SET irreversible = :irreversible WHERE id = :id ",
                 soci::use(irreversible?1:0),
                 soci::use(transaction_id_str);
         } catch(soci::mysql_soci_error e) {
@@ -111,14 +110,6 @@ namespace eosio {
                                         soci::use(transaction_id_str) );
             st.execute(true);
             amount = st.get_affected_rows();
-
-            //sometime soci will wrong, amount is still zero, so double check
-            if(amount==0){
-                *m_session << "select count(*) from transactions where irreversible = 0 and id = :id ",
-                    soci::into(amount),
-                    soci::use(transaction_id_str);
-                if(amount==0) return true;
-            }
         } catch(soci::mysql_soci_error e) {
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch (std::exception e) {
@@ -147,7 +138,7 @@ namespace eosio {
         return amount > 0;
     }
 
-    void transactions_table::delete_transaction(string transaction_id_str){ ilog("aaa");
+    void transactions_table::delete_transaction(string transaction_id_str){
         auto m_session = m_session_pool->get_session();
         
         try{
@@ -181,7 +172,7 @@ namespace eosio {
         auto m_session = m_session_pool->get_session();
 
         try{
-            *m_session << " SELECT id, UNIX_TIMESTAMP(created_at) FROM transactions where id = :tx_id ",
+            *m_session << " SELECT id, UNIX_TIMESTAMP(created_at) FROM transactions where id = :tx_id and irreversible = 1",
                 soci::into(tx_id),
                 soci::into(timestamp),
                 soci::use(transaction_id_str);
@@ -217,6 +208,25 @@ namespace eosio {
             wlog("get_scheduled_transaction_max_block_num failed.");
         }
         return block_num;
+    }
+
+    bool transactions_table::is_max_block_num_in_current_state( string transaction_id_str ){
+        auto m_session = m_session_pool->get_session();
+
+        int amount = 0;
+        try{
+            *m_session << "SELECT ( CASE WHEN ISNULL( block_num ) THEN 0 WHEN irreversible = 1 THEN 0 WHEN ISNULL( (SELECT max(block_num) FROM transactions WHERE irreversible = 1) ) THEN 0 WHEN block_num >= (SELECT max(block_num) from transactions where irreversible = 1 ) THEN 0 ELSE 1 END )from transactions where id = :id ",
+                soci::into(amount),
+                soci::use(transaction_id_str);
+            // ilog("？？？ ${amount}",("amount",amount));
+        } catch(soci::mysql_soci_error e) {
+            amount = 0;
+            wlog("soci::error: ${e}",("e",e.what()) );
+        } catch(...) {
+            amount = 0;
+            wlog("is_max_block_num_in_current_state failed.");
+        }
+        return amount !=0;
     }
 
 } // namespace

@@ -203,7 +203,7 @@ namespace eosio {
 
         my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this](const chain::transaction_trace_ptr& tt){
             // if(!(tt->action_traces.size()==1&&tt->action_traces[0].act.name.to_string()=="onblock"))
-                // ilog("${result}",("result",fc::json::to_string(tt)));
+            //     ilog("${result}",("result",fc::json::to_string(tt)));
             my->applied_transaction(tt);
         } ));
 

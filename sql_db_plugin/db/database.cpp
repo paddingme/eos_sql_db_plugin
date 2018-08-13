@@ -89,7 +89,7 @@ namespace eosio
             } else {
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }       
-            
+            // ilog("${tx_id}",("tx_id",trx_id_str));
             do{
                 auto result = m_transactions_table->irreversible_set(true,trx_id_str);
                 if(result) break;
@@ -130,12 +130,8 @@ namespace eosio
             }else{
                 //if irreversible block num > traces block bum, exiting.
                 //get traces block, get max scheduled_transaction block.
-                uint32_t block_num = m_transactions_table->get_transaction_block_num(trx_id_str);
-                if(block_num!=0){
-                    uint32_t max_block_num = m_transactions_table->get_max_irreversible_block_num();
-                    //when block_num < max_block_num, it isn't irreversible;
-                    if(block_num < max_block_num) break;
-                }
+                // ilog("${result}",("result",fc::json::to_string(tt)));
+                if( m_transactions_table->is_max_block_num_in_current_state(trx_id_str) ) break;
                 condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
             }
 
