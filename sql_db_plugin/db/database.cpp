@@ -89,10 +89,11 @@ namespace eosio
             } else {
                 trx_id_str = receipt.trx.get<chain::transaction_id_type>().str();
             }       
-            // ilog("${tx_id}",("tx_id",trx_id_str));
+            
             do{
                 auto result = m_transactions_table->irreversible_set(true,trx_id_str);
                 if(result) break;
+                else if( !m_transactions_table->is_current_transaction(trx_id_str,block_num) ) break;
                 condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));
             }while(!exit);
 
@@ -106,14 +107,11 @@ namespace eosio
 
     void database::consume_transaction_trace( const chain::transaction_trace_ptr& tt, boost::mutex::scoped_lock& lock_db, boost::condition_variable& condition, boost::atomic<bool>& exit ) {
         auto trx_id_str = tt->id.str();
-        // ilog("${trx_id_str}",("trx_id_str",trx_id_str));
         do{
             string tx_id;
             int64_t timestamp;
 
             if(tt->except){
-                //ilog("wrong transaction");
-                // m_transactions_table->delete_transaction(trx_id_str);
                 break;
             }
 
@@ -128,15 +126,12 @@ namespace eosio
                 m_traces_table->parse_traces(*tt,timestamp);
                 break;
             }else{
-                //if irreversible block num > traces block bum, exiting.
-                //get traces block, get max scheduled_transaction block.
-                // ilog("${result}",("result",fc::json::to_string(tt)));
                 if( m_transactions_table->is_max_block_num_in_current_state(trx_id_str) ) break;
                 condition.timed_wait(lock_db, boost::posix_time::milliseconds(10));     
             }
 
         }while(!exit);
-        m_transactions_table->delete_transaction(trx_id_str);
+        // m_transactions_table->delete_transaction(trx_id_str);
     }
 
     const std::string database::block_states_col = "block_states";

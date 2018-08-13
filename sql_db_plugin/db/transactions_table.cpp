@@ -70,7 +70,7 @@ namespace eosio {
         const auto blocktime = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
 
         try{
-            *m_session << "INSERT INTO transactions(id, block_num) VALUES (:id, :tx_id)",
+            *m_session << "INSERT INTO transactions(id, block_num) VALUES (:id, :bn)",
                 soci::use(transaction_id_str),
                 soci::use(block_num);
         } catch(soci::mysql_soci_error e) {
@@ -110,6 +110,12 @@ namespace eosio {
                                         soci::use(transaction_id_str) );
             st.execute(true);
             amount = st.get_affected_rows();
+
+            //sometime soci will error, amount always is 0;
+            if(amount==0){
+
+            }
+
         } catch(soci::mysql_soci_error e) {
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch (std::exception e) {
@@ -186,7 +192,7 @@ namespace eosio {
         }
 
         if(tx_id.empty()){
-            wlog( "scheduled transaction id is null. ${id}",("id",transaction_id_str) );
+            // wlog( "scheduled transaction id is null. ${id}",("id",transaction_id_str) );
             return ;
         }
 
@@ -218,7 +224,6 @@ namespace eosio {
             *m_session << "SELECT ( CASE WHEN ISNULL( block_num ) THEN 0 WHEN irreversible = 1 THEN 0 WHEN ISNULL( (SELECT max(block_num) FROM transactions WHERE irreversible = 1) ) THEN 0 WHEN block_num >= (SELECT max(block_num) from transactions where irreversible = 1 ) THEN 0 ELSE 1 END )from transactions where id = :id ",
                 soci::into(amount),
                 soci::use(transaction_id_str);
-            // ilog("？？？ ${amount}",("amount",amount));
         } catch(soci::mysql_soci_error e) {
             amount = 0;
             wlog("soci::error: ${e}",("e",e.what()) );
@@ -227,6 +232,26 @@ namespace eosio {
             wlog("is_max_block_num_in_current_state failed.");
         }
         return amount !=0;
+    }
+
+    bool transactions_table::is_current_transaction(string transaction_id_str, uint32_t block_num){
+
+        auto m_session = m_session_pool->get_session();
+
+        int amount = 0;
+        try{
+            *m_session << "SELECT (CASE WHEN (SELECT count(*) FROM transactions WHERE id = :id)!=0 THEN 0 WHEN (select max(block_num) FROM transactions) <= :bn THEN 0 ELSE 1 END) ",
+                soci::into(amount),
+                soci::use(transaction_id_str),
+                soci::use(block_num);
+        } catch(soci::mysql_soci_error e) {
+            amount = 0;
+            wlog("soci::error: ${e}",("e",e.what()) );
+        } catch(...) {
+            amount = 0;
+            wlog("is_current_transaction failed.");
+        }
+        return amount ==0;
     }
 
 } // namespace

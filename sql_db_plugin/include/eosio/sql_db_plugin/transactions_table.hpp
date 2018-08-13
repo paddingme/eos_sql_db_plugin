@@ -21,6 +21,7 @@ class transactions_table : public mysql_table {
         void get_irreversible_transaction( string,string&, int64_t& );
         uint32_t get_max_irreversible_block_num();
         bool is_max_block_num_in_current_state( string );
+        bool is_current_transaction( string, uint32_t );
 
     private:
         // std::shared_ptr<soci::session> m_session;
