@@ -142,7 +142,8 @@ namespace eosio {
                     json_str = fc::json::to_string(binary_data);
                     return json_str;
                 }  catch (fc::exception& e) {
-                    elog("FC Exception in ${e}", ("e", e.to_string()));
+                    wlog("unable to convert account abi to abi_def for ${s}::${n} :${abi}",("s",action.account)("n",action.name)("abi",action.data));
+                    wlog("FC Exception in ${e}", ("e", e.to_string()));
                 } catch(...) {
                     wlog("unable to convert account abi to abi_def for ${s}::${n} :${abi}",("s",action.account)("n",action.name)("abi",action.data));
                     wlog("analysis data failed");

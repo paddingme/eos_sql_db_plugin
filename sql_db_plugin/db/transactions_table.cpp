@@ -240,7 +240,7 @@ namespace eosio {
 
         int amount = 0;
         try{
-            *m_session << "SELECT (CASE WHEN (SELECT count(*) FROM transactions WHERE id = :id)!=0 THEN 0 WHEN (select max(block_num) FROM transactions) <= :bn THEN 0 ELSE 1 END) ",
+            *m_session << "SELECT (CASE WHEN (SELECT count(*) FROM transactions WHERE id = :id)!=0 THEN 0 WHEN ISNULL((select max(block_num) FROM transactions)) THEN 0 WHEN (select max(block_num) FROM transactions) <= :bn THEN 0 ELSE 1 END) ",
                 soci::into(amount),
                 soci::use(transaction_id_str),
                 soci::use(block_num);
