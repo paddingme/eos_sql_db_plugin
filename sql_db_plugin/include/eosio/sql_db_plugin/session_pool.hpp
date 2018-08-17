@@ -21,6 +21,8 @@ namespace eosio{
             void reconnect(soci::session& sql){
                 try{
                     sql << "select 1;";
+                } catch (std::exception& e) {
+                    sql.reconnect();
                 } catch(...) {
                     sql.reconnect();
                 }
@@ -50,6 +52,8 @@ namespace eosio{
 
                 try{
                     *sql_ptr << "select 1;";
+                } catch (std::exception& e) {
+                    sql_ptr->reconnect();
                 } catch(...) {
                     sql_ptr->reconnect();
                 }
