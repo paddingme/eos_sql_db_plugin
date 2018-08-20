@@ -27,9 +27,9 @@ namespace eosio {
                 soci::use(0),
                 soci::use(expiration),
                 soci::use(transaction.total_actions());
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog("insert transaction failed. ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
         } catch(...){
@@ -54,9 +54,9 @@ namespace eosio {
                 soci::use(0),
                 soci::use(blocktime),
                 soci::use(transaction.total_actions());
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog("insert transaction failed. ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
         } catch(...){
@@ -70,12 +70,12 @@ namespace eosio {
         const auto blocktime = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
 
         try{
-            *m_session << "INSERT INTO transactions(id, block_num) VALUES (:id, :bn)",
+            *m_session << "REPLACE INTO transactions(id, block_num) VALUES (:id, :bn)",
                 soci::use(transaction_id_str),
                 soci::use(block_num);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog("insert transaction failed. ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
         } catch(...){
@@ -90,9 +90,9 @@ namespace eosio {
             *m_session << "UPDATE transactions SET irreversible = :irreversible WHERE id = :id ",
                 soci::use(irreversible?1:0),
                 soci::use(transaction_id_str);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog("update transaction failed ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
         } catch(...) {
@@ -116,9 +116,9 @@ namespace eosio {
 
             }
 
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog("update transaction failed ${id}",("id",transaction_id_str));
             wlog("${e}",("e",e.what()));
         } catch(...) {
@@ -135,7 +135,7 @@ namespace eosio {
             *m_session << "SELECT COUNT(*) FROM transactions WHERE id = :id",
                 soci::into(amount),
                 soci::use(transaction_id_str);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {
             amount = 0;
@@ -149,7 +149,7 @@ namespace eosio {
         
         try{
             *m_session << "DELETE FROM transactions WHERE id = :id", soci::use(transaction_id_str);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {
             wlog("delete_transaction failed. ${id}",("id",transaction_id_str));
@@ -164,7 +164,7 @@ namespace eosio {
             *m_session << "SELECT block_num FROM transactions WHERE id = :id",
                 soci::into(block_num),
                 soci::use(transaction_id_str);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             block_num = 0;
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {
@@ -183,9 +183,9 @@ namespace eosio {
                 soci::into(timestamp),
                 soci::use(transaction_id_str);
                 
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog( "${e} ${id} ${data}",("e",e.what())("id",transaction_id_str)("data",tx_id) );
         }catch(...){
             wlog("insert scheduled transaction id failed. ${id}",("id",transaction_id_str));
@@ -206,7 +206,7 @@ namespace eosio {
         try{
             *m_session << "SELECT max(block_num) FROM transactions where irreversible = 1 ",
                 soci::into(block_num);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             block_num = 0;
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {
@@ -224,7 +224,7 @@ namespace eosio {
             *m_session << "SELECT ( CASE WHEN ISNULL( block_num ) THEN 0 WHEN irreversible = 1 THEN 0 WHEN ISNULL( (SELECT max(block_num) FROM transactions WHERE irreversible = 1) ) THEN 0 WHEN block_num >= (SELECT max(block_num) from transactions where irreversible = 1 ) THEN 0 ELSE 1 END )from transactions where id = :id ",
                 soci::into(amount),
                 soci::use(transaction_id_str);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             amount = 0;
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {
@@ -244,7 +244,7 @@ namespace eosio {
                 soci::into(amount),
                 soci::use(transaction_id_str),
                 soci::use(block_num);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             amount = 0;
             wlog("soci::error: ${e}",("e",e.what()) );
         } catch(...) {

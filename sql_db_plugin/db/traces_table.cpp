@@ -22,9 +22,9 @@ namespace eosio {
                 soci::use(trace_id_str),
                 soci::use(data);
                 
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch (std::exception e) {
+        } catch (std::exception& e) {
             wlog( "${e} ${id} ${data}",("e",e.what())("id",trace_id_str)("data",data) );
         }catch(...){
             wlog("insert trace failed. ${id}",("id",trace_id_str));
@@ -39,9 +39,9 @@ namespace eosio {
         block_timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
         try{
             *m_session << "SELECT tx_id, data FROM traces WHERE id = :id",soci::into(tx_id),soci::into(data),soci::use(trace_id_str);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch(std::exception e) {
+        } catch(std::exception& e) {
             wlog( "data:${data}",("data",data) );
             wlog("${e}",("e",e.what()));
         } catch(...){
@@ -55,9 +55,9 @@ namespace eosio {
 
         try{
             *m_session << "DELETE FROM traces WHERE tx_id = :id",soci::use(tx_id);
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch(std::exception e) {
+        } catch(std::exception& e) {
             wlog( "data:${data}",("data",data) );
             wlog("${e}",("e",e.what()));
         } catch(...){
@@ -93,9 +93,9 @@ namespace eosio {
 
         try{
             *m_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
-        } catch(soci::mysql_soci_error e) {
+        } catch(soci::mysql_soci_error& e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch(std::exception e) {
+        } catch(std::exception& e) {
             wlog( "${e}",("e",e.what()) );
         } catch(...) {
             wlog(" select abi wrong");
@@ -138,9 +138,9 @@ namespace eosio {
                             soci::use(producers),
                             soci::use(proxy),
                             soci::use(producers);
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog(" ${voter} ${proxy} ${producers}",("voter",voter)("proxy",proxy)("producers",producers));
                     wlog( "${e}",("e",e.what()) );
                 } catch(...) {
@@ -189,9 +189,9 @@ namespace eosio {
                             soci::use(stake_cpu_quantity.get_amount());
                     }
 
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("${e}",("e",e.what()));
                 } catch(...) {
                     wlog( "delegatebw ${from} delegate ${receiver} ${stake_net_quantity} ${stake_cpu_quantity} ",("from",from)("receiver",receiver)("stake_net_quantity",stake_net_quantity)("stake_cpu_quantity",stake_cpu_quantity) );
@@ -235,9 +235,9 @@ namespace eosio {
                             soci::use((-unstake_net_quantity).get_amount()),
                             soci::use((-unstake_cpu_quantity).get_amount());
 
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("${e}",("e",e.what()));
                 } catch(...) {
                     wlog( "undelegatebw ${from} undelegate ${receiver} ${unstake_net_quantity} ${unstake_cpu_quantity} ",("from",from)("receiver",receiver)("unstake_net_quantity",unstake_net_quantity)("unstake_cpu_quantity",unstake_cpu_quantity) );
@@ -250,9 +250,9 @@ namespace eosio {
 
                 try{
                     *m_session << " UPDATE refunds SET net_amount = 0, cpu_amount = 0 WHERE owner = :ow",soci::use(owner);
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("${e}",("e",e.what()));
                 } catch(...){
                     wlog("refund ${owner}",("owner",owner));
@@ -277,9 +277,9 @@ namespace eosio {
                             soci::use( maximum_supply.get_symbol().name() ),
                             soci::use( issuer ),
                             soci::use( action.account.to_string() );
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("${e}",("e",e.what()));
                     wlog("${sql}",("sql",insertassets) );
                     wlog( "create asset failed. ${issuer} ${maximum_supply}",("issuer",issuer)("maximum_supply",maximum_supply) );
@@ -315,9 +315,9 @@ namespace eosio {
                             soci::use( quantity.decimals() ),
                             soci::use( action.account.to_string() ),
                             soci::use( quantity.get_amount() );
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("my god : ${e}",("e",e.what()));
                 } catch(...) {
                     wlog( "INSERT INTO tokens ( account, symbol, amount, symbol_owner, symbol_owner_account )  VALUES( :ac, :sym, :am, :so, :soac ) " );
@@ -346,9 +346,9 @@ namespace eosio {
                             soci::use( action.account.to_string() ),
                             soci::use( from );
 
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("my god : ${e}",("e",e.what()));
                 } catch(...) {
                     wlog( "transfer failed. ${from} transfer to ${to} ${quantity} ",("from",from)("to",to)("quantity",quantity) );
@@ -366,7 +366,7 @@ namespace eosio {
                 try{ 
                     issuer = abi_data["issuer"].as<chain::name>().to_string();
                     maximum_supply = abi_data["maximum_supply"].as<chain::asset>();
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog( "create args transform variant failed ${account} ${e}",("account",action.account)("e",e.what()) );
                     return ;
                 } catch(...) {
@@ -384,9 +384,9 @@ namespace eosio {
                             soci::use( maximum_supply.get_symbol().name() ),
                             soci::use( issuer ),
                             soci::use( action.account.to_string() );
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("${e}",("e",e.what()));
                 } catch (...) {
                     wlog("${sql}",("sql",insertassets) );
@@ -401,9 +401,9 @@ namespace eosio {
                 try{ 
                     to = abi_data["to"].as<chain::name>().to_string();
                     quantity = abi_data["quantity"].as<chain::asset>();
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog( "issue args transform variant failed ${account} ${e}",("account",action.account)("e",e.what()) );
                     return ;
                 } catch(...) {
@@ -434,9 +434,9 @@ namespace eosio {
                             soci::use( quantity.decimals() ),
                             soci::use( action.account.to_string() ),
                             soci::use( quantity.get_amount() );
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("my god : ${e}",("e",e.what()));
                 } catch(...) {
                     wlog( "INSERT INTO tokens ( account, symbol, amount, symbol_owner, symbol_owner_account )  VALUES( :ac, :sym, :am, :so, :soac ) " );
@@ -453,9 +453,9 @@ namespace eosio {
                     from = abi_data["from"].as<chain::name>().to_string();
                     to = abi_data["to"].as<chain::name>().to_string();
                     quantity = abi_data["quantity"].as<chain::asset>();
-                } catch(soci::mysql_soci_error e) {
+                } catch(soci::mysql_soci_error& e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                }catch(std::exception e) {
+                }catch(std::exception& e) {
                     wlog( "transfer args transform variant failed ${account } ${e}",("account",action.account)("e",e.what()) );
                     return ;
                 } catch(...) {
@@ -481,7 +481,7 @@ namespace eosio {
 
                 } catch(soci::mysql_soci_error e) {
                     wlog("soci::error: ${e}",("e",e.what()) );
-                } catch(std::exception e) {
+                } catch(std::exception& e) {
                     wlog("my god : ${e}",("e",e.what()));
                 } catch(...) {
                     wlog( "transfer failed. ${from} transfer to ${to} ${quantity} ",("from",from)("to",to)("quantity",quantity) );
