@@ -18,20 +18,19 @@ using namespace std;
 class traces_table : public mysql_table {
     public:
         traces_table( std::shared_ptr<soci::session> session );
-        traces_table(std::shared_ptr<soci_session_pool> session_pool);
 
         void add( const chain::transaction_trace_ptr& );
-        std::string list( string, chain::block_timestamp_type );
-        void parse_traces(chain::transaction_trace, int64_t );
-        auto add_data( chain::action );
-        void parse_actions( chain::action );
-        void dfs_inline_traces( vector<chain::action_trace> );
+        bool list( string, chain::block_timestamp_type );
+        auto add_data(chain::action action);
+        void parse_actions( chain::action action );
+        void dfs_inline_traces( vector<chain::action_trace> itc );
+        // void irreversible_set( std::string block_id, bool irreversible, std::string transaction_id_str );
+        // bool find_transaction( std::string transaction_id_str);
 
         long long block_timestamp;
 
     private:
-        // std::shared_ptr<soci::session> m_session;
-        std::shared_ptr<soci_session_pool> m_session_pool;
+        std::shared_ptr<soci::session> m_session;
     };
 
 } // namespace
