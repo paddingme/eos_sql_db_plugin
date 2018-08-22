@@ -5,15 +5,7 @@
 
 namespace eosio {
 
-    blocks_table::blocks_table(std::shared_ptr<soci_session_pool> session_pool):
-        m_session_pool(session_pool)
-    {
-
-    }
-
-
-    void blocks_table::add( const chain::block_state_ptr&  bs ) {
-        auto m_session = m_session_pool->get_session();
+    void blocks_table::add( std::shared_ptr<soci::session> m_session, const chain::block_state_ptr&  bs ) {
 
         auto block = bs->block;
         const auto block_id_str = block->id().str();
@@ -44,17 +36,16 @@ namespace eosio {
                         soci::use(new_producers),
                         soci::use(block_id_str);
             }
-        } catch(soci::mysql_soci_error& e) {
+        } catch(soci::mysql_soci_error e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch(std::exception& e) {
+        } catch(std::exception e) {
             wlog( "add blocks failed. ${e}",("e",e.what()) );
         } catch(...) {
             wlog( "add blocks failed. " );
         }
     }
 
-    bool blocks_table::irreversible_set( std::string block_id, bool irreversible ){
-        auto m_session = m_session_pool->get_session();
+    bool blocks_table::irreversible_set( std::shared_ptr<soci::session> m_session, std::string block_id, bool irreversible ){
         
         int amount = 0;
         try{
@@ -63,17 +54,16 @@ namespace eosio {
                     soci::use(block_id) );
             st.execute(true);
             amount = st.get_affected_rows();
-
-            //sometime soci will wrong, amount is still zero, so double check
             if(amount==0){
                 *m_session << "select count(*) from blocks where irreversible = 0 and id = :id ",
                     soci::into(amount),
                     soci::use(block_id);
                 if(amount==0) return true;
             }
-        } catch(soci::mysql_soci_error& e) {
+            // wlog( "${amount}",("amount",amount) );
+        } catch(soci::mysql_soci_error e) {
             wlog("soci::error: ${e}",("e",e.what()) );
-        } catch(std::exception& e) {
+        } catch(std::exception e) {
             wlog( "update block irreversible failed.block id:${id},error: ${e}",("id",block_id)("e",e.what()) );
         } catch(...) {
             wlog("update block irreversible failed. ${id}",("id",block_id));

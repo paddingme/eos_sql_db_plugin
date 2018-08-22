@@ -14,7 +14,6 @@ add_library(sql_db_plugin
     db/transactions_table.cpp
     db/blocks_table.cpp
     db/actions_table.cpp
-    db/traces_table.cpp
     sql_db_plugin.cpp
     )
 

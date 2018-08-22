@@ -2,6 +2,7 @@
 
 #include <eosio/sql_db_plugin/table.hpp>
 
+#include <vector>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -16,6 +17,7 @@
 namespace eosio {
 
 using std::string;
+using std::vector;
 
 struct system_contract_arg{
     system_contract_arg() = default;
@@ -33,23 +35,20 @@ struct system_contract_arg{
 class actions_table : public mysql_table {
     public:
         actions_table(){}
-        actions_table(std::shared_ptr<soci::session> session);
-        actions_table(std::shared_ptr<soci_session_pool> session_pool);
 
-        void add( chain::action, std::string, int64_t, std::vector<std::string>); 
-        string add_data( chain::action );
-        void parse_actions( chain::action );
+        void add( std::shared_ptr<soci::session>, chain::action , chain::transaction_id_type , chain::block_timestamp_type , std::vector<std::string> ); 
+        string add_data( std::shared_ptr<soci::session>, chain::action );
+        soci::rowset<soci::row> get_assets( std::shared_ptr<soci::session>, int ,int );
 
         static const chain::account_name newaccount;
         static const chain::account_name setabi;
 
-    private:
-        // std::shared_ptr<soci::session> m_session;
-        std::shared_ptr<soci_session_pool> m_session_pool;
+        void parse_actions( std::shared_ptr<soci::session>, chain::action );
 };
 
 
 } // namespace
+
 FC_REFLECT( eosio::system_contract_arg                        , (to)(from)(receiver)(payer)(name)(account) )
 
 

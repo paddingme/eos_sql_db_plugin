@@ -47,11 +47,11 @@ namespace eosio{
             //     }
             // }
 
-            std::unique_ptr<soci::session> get_session(){
-                auto sql_ptr = std::make_unique<soci::session>(*c_pool_ptr);
+            std::shared_ptr<soci::session> get_session(){
+                auto sql_ptr = std::make_shared<soci::session>(*c_pool_ptr);
 
-                try{
-                    *sql_ptr << "select 1;";
+                try{// ubuntu os  try catch will lose, so direct reconnect
+                    sql_ptr->reconnect();
                 } catch (std::exception& e) {
                     sql_ptr->reconnect();
                 } catch(...) {
