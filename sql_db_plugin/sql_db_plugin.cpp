@@ -157,7 +157,10 @@ namespace eosio {
             get_tokens_result result;
 
             for(auto t : p.tokens){
-                ilog("${code} ${account}",("code",t.code)("account",p.account));
+                token tk;
+                tk.code = t.code;
+                tk.symbol = t.symbol;
+
                 walk_key_value_table(t.code, p.account, N(accounts), [&](const key_value_object& obj){
                     EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
@@ -167,13 +170,20 @@ namespace eosio {
 
                     EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
 
-                    if( !t.symbol || boost::iequals(cursor.symbol_name(), *t.symbol) ) {
-                        result.tokens.emplace_back(cursor);
+                    if( cursor.symbol_name() == t.symbol ) {
+                        tk.quantity = cursor;
+                        tk.symbol_precision = cursor.decimals();
+                        result.tokens.emplace_back(tk);
                     }
 
                     // return false if we are looking for one and found it, true otherwise
-                    return !(t.symbol && boost::iequals(cursor.symbol_name(), *t.symbol));
-                },[&](){});
+                    return !(cursor.symbol_name() == t.symbol);
+                },[&](){
+                    if( t.symbol_precision > 18 ) return ;
+                    tk.quantity = asset(0, chain::symbol(chain::string_to_symbol(t.symbol_precision,t.symbol.c_str())));
+                    tk.symbol_precision = t.symbol_precision;
+                    result.tokens.emplace_back(tk);
+                });
             }
             return result;
         }
@@ -202,6 +212,7 @@ namespace eosio {
 
                         if( cursor.symbol_name() == t.symbol ) {
                             t.quantity = cursor;
+                            t.symbol_precision = cursor.decimals();
                             result.tokens.emplace_back(t);
                         }
 
@@ -210,6 +221,7 @@ namespace eosio {
 
                     }, [&](){
                         t.quantity = asset(0, chain::symbol(chain::string_to_symbol(it->get<int>(2),t.symbol.c_str())));
+                        t.symbol_precision = it->get<int>(2);
                         result.tokens.emplace_back(t);
                     });
 

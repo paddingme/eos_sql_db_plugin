@@ -5,9 +5,13 @@ namespace eosio
 {
 
     sql_database::sql_database(const std::string &uri, uint32_t block_num_start, size_t pool_size) {
-        m_session_pool = std::make_shared<soci_session_pool>(pool_size,uri);
-        m_block_num_start = block_num_start;
-        system_account = chain::name(chain::config::system_account_name).to_string();
+        m_session_pool          = std::make_shared<soci_session_pool>(pool_size,uri);
+        m_accounts_table        = std::make_unique<accounts_table>();
+        m_blocks_table          = std::make_unique<blocks_table>();
+        m_transactions_table    = std::make_unique<transactions_table>();
+        m_actions_table         = std::make_unique<actions_table>();
+        m_block_num_start       = block_num_start;
+        system_account          = chain::name(chain::config::system_account_name).to_string();
     }
 
     sql_database::sql_database(const std::string &uri, uint32_t block_num_start, size_t pool_size, std::vector<string> filter_on, std::vector<string> filter_out) {
@@ -27,8 +31,7 @@ namespace eosio
     }
 
     void sql_database::consume_block_state( const chain::block_state_ptr& bs) {
-        auto m_session = m_session_pool->get_session();
-
+        // auto m_session = m_session_pool->get_session();
         auto block_id = bs->id.str();
 
         for(auto& receipt : bs->block->transactions) {
@@ -39,7 +42,7 @@ namespace eosio
                 if(trx.actions.size()==1 && trx.actions[0].name.to_string() == "onblock" ) continue ;
 
                 for(auto actions : trx.actions){
-                    m_actions_table->add( m_session, actions,trx.id(), bs->block->timestamp, m_action_filter_on);
+                    m_actions_table->add( m_session_pool->get_session(), actions,trx.id(), bs->block->timestamp, m_action_filter_on);
                 }
 
             }         

@@ -11,7 +11,6 @@
 #include <eosio/sql_db_plugin/transactions_table.hpp>
 #include <eosio/sql_db_plugin/blocks_table.hpp>
 #include <eosio/sql_db_plugin/actions_table.hpp>
-#include <eosio/sql_db_plugin/table.hpp>
 #include <eosio/sql_db_plugin/session_pool.hpp>
 
 #include <boost/thread/mutex.hpp>
@@ -19,7 +18,7 @@
 
 namespace eosio {
 
-class sql_database : public mysql_table{
+class sql_database {
     public:
         sql_database(const std::string& uri, uint32_t block_num_start, size_t pool_size);
         sql_database(const std::string& uri, uint32_t block_num_start, size_t pool_size, std::vector<std::string>, std::vector<std::string>);

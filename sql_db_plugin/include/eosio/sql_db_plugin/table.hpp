@@ -11,11 +11,6 @@ namespace eosio{
 
 class mysql_table{
     public:
-
-        void reconnect(std::shared_ptr<soci::session> m_session){
-            m_session->reconnect();
-        }
-
         fc::microseconds max_serialization_time = fc::microseconds(150*1000);
 
 };

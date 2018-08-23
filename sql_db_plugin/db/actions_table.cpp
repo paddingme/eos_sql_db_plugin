@@ -1,6 +1,7 @@
 // #include "actions_table.hpp"
 #include <eosio/sql_db_plugin/actions_table.hpp>
 #include <cmath>
+#include <chrono>
 
 namespace eosio {
 
@@ -228,8 +229,6 @@ namespace eosio {
     }
 
     soci::rowset<soci::row> actions_table::get_assets(std::shared_ptr<soci::session> m_session, int startNum,int pageSize){
-        reconnect(m_session);
-               
         soci::rowset<soci::row> rs = ( m_session->prepare << "select contract_owner, issuer, symbol_precision, symbol from assets limit :st,:pt ",
             soci::use(startNum),soci::use(pageSize));
         return rs;

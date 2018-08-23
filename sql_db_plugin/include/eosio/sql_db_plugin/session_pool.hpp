@@ -39,7 +39,7 @@ namespace eosio{
                 c_pool_ptr->give_back(pos);
             }
 
-            // void reconnect(std::unique_ptr<session> sql_ptr){
+            // void reconnect(std::shared_ptr<session> sql_ptr){
             //     mysql_session_backend * mysqlBackEnd = static_cast<mysql_session_backend *>(sql_ptr->get_backend());
             //     int i = mysql_ping(mysqlBackEnd->conn_);
             //     if(i==1){
@@ -49,8 +49,8 @@ namespace eosio{
 
             std::shared_ptr<soci::session> get_session(){
                 auto sql_ptr = std::make_shared<soci::session>(*c_pool_ptr);
-
                 try{// ubuntu os  try catch will lose, so direct reconnect
+
                     sql_ptr->reconnect();
                 } catch (std::exception& e) {
                     sql_ptr->reconnect();
