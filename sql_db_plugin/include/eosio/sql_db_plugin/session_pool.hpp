@@ -2,9 +2,9 @@
 #include <soci/soci.h>
 #include <soci/mysql/soci-mysql.h>
 #include <soci/connection-pool.h>
+#include <mysql.h>
 
 namespace eosio{
-
 
     class soci_session_pool {
         public:
@@ -39,23 +39,23 @@ namespace eosio{
                 c_pool_ptr->give_back(pos);
             }
 
-            // void reconnect(std::shared_ptr<session> sql_ptr){
-            //     mysql_session_backend * mysqlBackEnd = static_cast<mysql_session_backend *>(sql_ptr->get_backend());
-            //     int i = mysql_ping(mysqlBackEnd->conn_);
-            //     if(i==1){
-            //         sql_ptr->reconnect();
-            //     }
-            // }
+            void reconnect(std::shared_ptr<soci::session> sql_ptr){
+                soci::mysql_session_backend * mysqlBackEnd = static_cast<soci::mysql_session_backend *>(sql_ptr->get_backend());
+                int i = mysql_ping(mysqlBackEnd->conn_);
+                if(i==1){
+                    sql_ptr->reconnect();
+                }
+            }
 
             std::shared_ptr<soci::session> get_session(){
                 auto sql_ptr = std::make_shared<soci::session>(*c_pool_ptr);
                 try{// ubuntu os  try catch will lose, so direct reconnect
 
-                    sql_ptr->reconnect();
+                    reconnect(sql_ptr);
                 } catch (std::exception& e) {
-                    sql_ptr->reconnect();
+                    reconnect(sql_ptr);
                 } catch(...) {
-                    sql_ptr->reconnect();
+                    reconnect(sql_ptr);
                 }
 
                 return sql_ptr;

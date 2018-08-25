@@ -63,7 +63,7 @@ class read_only{
         struct get_all_tokens_params{
             account_name account;
             int startNum = 0;
-            int pageSize = 0;
+            int pageSize = 10;
         };
 
         struct get_all_tokens_result{
