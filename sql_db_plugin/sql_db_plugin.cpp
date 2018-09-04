@@ -194,46 +194,92 @@ namespace eosio {
 
             if(p.startNum<0 || p.pageSize<0) return result;
 
-                auto assets = sql_db->m_actions_table->get_assets(sql_db->m_session_pool->get_session(), p.startNum, p.pageSize);
+            auto assets = sql_db->m_actions_table->get_assets(sql_db->m_session_pool->get_session(), p.startNum, p.pageSize);
 
-                for(auto it = assets.begin() ; it != assets.end(); it++){
-                    try{
-                        token t;
-                        t.contract = it->get<string>(0);
-                        t.symbol = it->get<string>(3);
+            for(auto it = assets.begin() ; it != assets.end(); it++){
+                try{
+                    token t;
+                    t.contract = it->get<string>(0);
+                    t.symbol = it->get<string>(3);
 
-                        walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
-                            EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
+                    walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
+                        EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
-                            asset cursor;
-                            fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
-                            fc::raw::unpack(ds, cursor);
+                        asset cursor;
+                        fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                        fc::raw::unpack(ds, cursor);
 
-                            EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
+                        EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
 
-                            if( cursor.symbol_name() == t.symbol ) {
-                                t.quantity = asset_amount_to_string(cursor);
-                                t.precision = cursor.decimals();
-                                result.tokens.emplace_back(t);
-                            }
-
-                            // return false if we are looking for one and found it, true otherwise
-                            return !(cursor.symbol_name() == t.symbol);
-
-                        }, [&](){
-                            asset cursor = asset(0, chain::symbol(chain::string_to_symbol(it->get<int>(2),t.symbol.c_str())));
-                            t.quantity = asset_amount_to_string( cursor );
-                            t.precision = it->get<int>(2);
+                        if( cursor.symbol_name() == t.symbol ) {
+                            t.quantity = asset_amount_to_string(cursor);
+                            t.precision = cursor.decimals();
                             result.tokens.emplace_back(t);
-                        });
-                    } catch(fc::exception& e) {
-                        wlog("${e}",("e",e.what()));
-                    } catch(std::exception& e) {
-                        wlog("${e}",("e",e.what()));
-                    } catch (...) {
-                        wlog("unknown");
-                    }
+                        }
+
+                        // return false if we are looking for one and found it, true otherwise
+                        return !(cursor.symbol_name() == t.symbol);
+
+                    }, [&](){
+                        asset cursor = asset(0, chain::symbol(chain::string_to_symbol(it->get<int>(2),t.symbol.c_str())));
+                        t.quantity = asset_amount_to_string( cursor );
+                        t.precision = it->get<int>(2);
+                        result.tokens.emplace_back(t);
+                    });
+                } catch(fc::exception& e) {
+                    wlog("${e}",("e",e.what()));
+                } catch(std::exception& e) {
+                    wlog("${e}",("e",e.what()));
+                } catch (...) {
+                    wlog("unknown");
                 }
+            }
+            
+            
+            return result;
+        }
+
+        read_only::get_hold_tokens_result read_only::get_hold_tokens( const get_hold_tokens_params& p )const {
+            get_hold_tokens_result result;
+
+
+            auto assets = sql_db->m_actions_table->get_assets(sql_db->m_session_pool->get_session());
+
+            for(auto it = assets.begin() ; it != assets.end(); it++){
+                try{
+                    token t;
+                    t.contract = it->get<string>(0);
+                    t.symbol = it->get<string>(3);
+
+                    walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
+                        EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
+
+                        asset cursor;
+                        fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                        fc::raw::unpack(ds, cursor);
+
+                        EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
+
+                        if( cursor.symbol_name() == t.symbol ) {
+                            t.quantity = asset_amount_to_string(cursor);
+                            t.precision = cursor.decimals();
+                            result.tokens.emplace_back(t);
+                        }
+
+                        // return false if we are looking for one and found it, true otherwise
+                        return !(cursor.symbol_name() == t.symbol);
+
+                    }, [&](){
+                        
+                    });
+                } catch(fc::exception& e) {
+                    wlog("${e}",("e",e.what()));
+                } catch(std::exception& e) {
+                    wlog("${e}",("e",e.what()));
+                } catch (...) {
+                    wlog("unknown");
+                }
+            }
             
             
             return result;

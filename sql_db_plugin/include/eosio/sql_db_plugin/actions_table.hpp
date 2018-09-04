@@ -39,6 +39,7 @@ class actions_table : public mysql_table {
         void add( std::shared_ptr<soci::session>, chain::action , chain::transaction_id_type , chain::block_timestamp_type , std::vector<std::string> ); 
         string add_data( std::shared_ptr<soci::session>, chain::action );
         soci::rowset<soci::row> get_assets( std::shared_ptr<soci::session>, int ,int );
+        soci::rowset<soci::row> get_assets( std::shared_ptr<soci::session> );
 
         static const chain::account_name newaccount;
         static const chain::account_name setabi;

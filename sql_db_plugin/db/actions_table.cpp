@@ -234,6 +234,11 @@ namespace eosio {
         return rs;
     }
 
+    soci::rowset<soci::row> actions_table::get_assets(std::shared_ptr<soci::session> m_session){
+        soci::rowset<soci::row> rs = ( m_session->prepare << "select contract_owner, issuer, symbol_precision, symbol from assets order by id ");
+        return rs;
+    }
+
     const chain::account_name actions_table::newaccount = chain::newaccount::get_name();
     const chain::account_name actions_table::setabi = chain::setabi::get_name();
 

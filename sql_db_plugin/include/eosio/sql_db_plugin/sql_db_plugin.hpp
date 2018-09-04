@@ -72,6 +72,16 @@ class read_only{
 
         get_all_tokens_result get_all_tokens( const get_all_tokens_params& p )const;
 
+        struct get_hold_tokens_params{
+            account_name account;
+        };
+
+        struct get_hold_tokens_result{
+            vector<token> tokens;
+        };
+
+        get_hold_tokens_result get_hold_tokens( const get_hold_tokens_params& p )const;
+
         //get user resource
         struct get_userresource_params{
             account_name account;
@@ -190,6 +200,9 @@ FC_REFLECT(eosio::sql_db_apis::read_only::get_tokens_result, (tokens) )
 FC_REFLECT(eosio::sql_db_apis::read_only::token, (contract)(quantity)(symbol)(precision) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_all_tokens_params, (account)(startNum)(pageSize) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_all_tokens_result, (tokens) )
+
+FC_REFLECT(eosio::sql_db_apis::read_only::get_hold_tokens_params, (account))
+FC_REFLECT(eosio::sql_db_apis::read_only::get_hold_tokens_result, (tokens) )
 
 FC_REFLECT(eosio::sql_db_apis::read_only::get_userresource_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_userresource_result, (net_weight)(cpu_weight)(ram_bytes) )
