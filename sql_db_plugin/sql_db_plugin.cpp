@@ -152,39 +152,69 @@ namespace eosio {
     }
 
     namespace sql_db_apis{
-        
+
+        abi_def get_abi( const controller& db, const name& account ) {
+            const auto &d = db.db();
+            const account_object *code_accnt = d.find<account_object, by_name>(account);
+            EOS_ASSERT(code_accnt != nullptr, chain::account_query_exception, "Fail to retrieve account for ${account}", ("account", account) );
+            abi_def abi;
+            abi_serializer::to_abi(code_accnt->abi, abi);
+            return abi;
+        }
+
+        string get_table_type( const abi_def& abi, const name& table_name ) {
+            for( const auto& t : abi.tables ) {
+                if( t.name == table_name ){
+                    return t.index_type;
+                }
+            }
+            EOS_ASSERT( false, chain::contract_table_query_exception, "Table ${table} is not specified in the ABI", ("table",table_name) );
+        }
+
+
         read_only::get_tokens_result read_only::get_tokens( const get_tokens_params& p )const {
             get_tokens_result result;
 
             for(auto t : p.tokens){
-                token tk;
-                tk.contract = t.contract;
-                tk.symbol = t.symbol;
+                try{
+                    const abi_def abi = get_abi( db, t.contract );
+                    auto table_type = get_table_type( abi, "accounts" );
 
-                walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
-                    EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
+                    token tk;
+                    tk.contract = t.contract;
+                    tk.symbol = t.symbol;
 
-                    asset cursor;
-                    fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
-                    fc::raw::unpack(ds, cursor);
+                    walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
+                        EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
-                    EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
+                        asset cursor;
+                        fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                        fc::raw::unpack(ds, cursor);
 
-                    if( cursor.symbol_name() == t.symbol ) {
-                        tk.quantity = asset_amount_to_string(cursor);
-                        tk.precision = cursor.decimals();
+                        EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
+
+                        if( cursor.symbol_name() == t.symbol ) {
+                            tk.quantity = asset_amount_to_string(cursor);
+                            tk.precision = cursor.decimals();
+                            result.tokens.emplace_back(tk);
+                        }
+
+                        // return false if we are looking for one and found it, true otherwise
+                        return !(cursor.symbol_name() == t.symbol);
+                    },[&](){
+                        if( t.precision > 18 ) return ;
+                        asset cursor = asset(0, chain::symbol(chain::string_to_symbol(t.precision,t.symbol.c_str())));
+                        tk.quantity = asset_amount_to_string( cursor );
+                        tk.precision = t.precision;
                         result.tokens.emplace_back(tk);
-                    }
-
-                    // return false if we are looking for one and found it, true otherwise
-                    return !(cursor.symbol_name() == t.symbol);
-                },[&](){
-                    if( t.precision > 18 ) return ;
-                    asset cursor = asset(0, chain::symbol(chain::string_to_symbol(t.precision,t.symbol.c_str())));
-                    tk.quantity = asset_amount_to_string( cursor );
-                    tk.precision = t.precision;
-                    result.tokens.emplace_back(tk);
-                });
+                    });
+                } catch(fc::exception& e) {
+                    wlog("${e}",("e",e.what()));
+                } catch(std::exception& e) {
+                    wlog("${e}",("e",e.what()));
+                } catch (...) {
+                    wlog("unknown");
+                }
             }
             return result;
         }
@@ -201,6 +231,9 @@ namespace eosio {
                     token t;
                     t.contract = it->get<string>(0);
                     t.symbol = it->get<string>(3);
+
+                    const abi_def abi = get_abi( db, t.contract );
+                    auto table_type = get_table_type( abi, "accounts" );
 
                     walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
                         EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
@@ -250,6 +283,9 @@ namespace eosio {
                     token t;
                     t.contract = it->get<string>(0);
                     t.symbol = it->get<string>(3);
+
+                    const abi_def abi = get_abi( db, t.contract );
+                    auto table_type = get_table_type( abi, "accounts" );
 
                     walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
                         EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
