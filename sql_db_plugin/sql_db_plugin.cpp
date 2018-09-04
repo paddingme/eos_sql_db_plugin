@@ -158,10 +158,10 @@ namespace eosio {
 
             for(auto t : p.tokens){
                 token tk;
-                tk.code = t.code;
+                tk.contract = t.contract;
                 tk.symbol = t.symbol;
 
-                walk_key_value_table(t.code, p.account, N(accounts), [&](const key_value_object& obj){
+                walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
                     EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
                     asset cursor;
@@ -171,17 +171,17 @@ namespace eosio {
                     EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
 
                     if( cursor.symbol_name() == t.symbol ) {
-                        tk.quantity = cursor;
-                        tk.symbol_precision = cursor.decimals();
+                        tk.quantity = cursor.to_real();
+                        tk.precision = cursor.decimals();
                         result.tokens.emplace_back(tk);
                     }
 
                     // return false if we are looking for one and found it, true otherwise
                     return !(cursor.symbol_name() == t.symbol);
                 },[&](){
-                    if( t.symbol_precision > 18 ) return ;
-                    tk.quantity = asset(0, chain::symbol(chain::string_to_symbol(t.symbol_precision,t.symbol.c_str())));
-                    tk.symbol_precision = t.symbol_precision;
+                    if( t.precision > 18 ) return ;
+                    tk.quantity = 0;
+                    tk.precision = t.precision;
                     result.tokens.emplace_back(tk);
                 });
             }
@@ -198,10 +198,10 @@ namespace eosio {
 
                 for(auto it = assets.begin() ; it != assets.end(); it++){
                     token t;
-                    t.code = it->get<string>(0);
+                    t.contract = it->get<string>(0);
                     t.symbol = it->get<string>(3);
 
-                    walk_key_value_table(t.code, p.account, N(accounts), [&](const key_value_object& obj){
+                    walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
                         EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
                         asset cursor;
@@ -211,8 +211,8 @@ namespace eosio {
                         EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
 
                         if( cursor.symbol_name() == t.symbol ) {
-                            t.quantity = cursor;
-                            t.symbol_precision = cursor.decimals();
+                            t.quantity = cursor.to_real();
+                            t.precision = cursor.decimals();
                             result.tokens.emplace_back(t);
                         }
 
@@ -220,8 +220,8 @@ namespace eosio {
                         return !(cursor.symbol_name() == t.symbol);
 
                     }, [&](){
-                        t.quantity = asset(0, chain::symbol(chain::string_to_symbol(it->get<int>(2),t.symbol.c_str())));
-                        t.symbol_precision = it->get<int>(2);
+                        t.quantity = 0;
+                        t.precision = it->get<int>(2);
                         result.tokens.emplace_back(t);
                     });
 

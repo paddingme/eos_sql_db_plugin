@@ -36,16 +36,16 @@ class read_only{
 
         //get tokens
         struct token {
-            account_name     code;
-            asset            quantity;
+            account_name     contract;
+            double            quantity;
             string           symbol;
-            uint8_t          symbol_precision;
+            uint8_t          precision;
         };
 
         struct token_params{
-            name             code;
+            name             contract;
             string           symbol;
-            uint8_t          symbol_precision = 255;
+            uint8_t          precision = 255;
         };
 
         struct get_tokens_params{
@@ -171,11 +171,11 @@ class sql_db_plugin : public plugin<sql_db_plugin> {
 
 }
 
-FC_REFLECT(eosio::sql_db_apis::read_only::token_params, (code)(symbol)(symbol_precision) )
+FC_REFLECT(eosio::sql_db_apis::read_only::token_params, (contract)(symbol)(precision) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_tokens_params, (account)(tokens) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_tokens_result, (tokens) )
 
-FC_REFLECT(eosio::sql_db_apis::read_only::token, (code)(quantity)(symbol)(symbol_precision) )
+FC_REFLECT(eosio::sql_db_apis::read_only::token, (contract)(quantity)(symbol)(precision) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_all_tokens_params, (account)(startNum)(pageSize) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_all_tokens_result, (tokens) )
 
