@@ -171,7 +171,7 @@ namespace eosio {
                     EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
 
                     if( cursor.symbol_name() == t.symbol ) {
-                        tk.quantity = cursor.to_real();
+                        tk.quantity = asset_amount_to_string(cursor);
                         tk.precision = cursor.decimals();
                         result.tokens.emplace_back(tk);
                     }
@@ -180,7 +180,8 @@ namespace eosio {
                     return !(cursor.symbol_name() == t.symbol);
                 },[&](){
                     if( t.precision > 18 ) return ;
-                    tk.quantity = 0;
+                    asset cursor = asset(0, chain::symbol(chain::string_to_symbol(t.precision,t.symbol.c_str())));
+                    tk.quantity = asset_amount_to_string( cursor );
                     tk.precision = t.precision;
                     result.tokens.emplace_back(tk);
                 });
@@ -193,44 +194,47 @@ namespace eosio {
 
             if(p.startNum<0 || p.pageSize<0) return result;
 
-            try{
                 auto assets = sql_db->m_actions_table->get_assets(sql_db->m_session_pool->get_session(), p.startNum, p.pageSize);
 
                 for(auto it = assets.begin() ; it != assets.end(); it++){
-                    token t;
-                    t.contract = it->get<string>(0);
-                    t.symbol = it->get<string>(3);
+                    try{
+                        token t;
+                        t.contract = it->get<string>(0);
+                        t.symbol = it->get<string>(3);
 
-                    walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
-                        EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
+                        walk_key_value_table(t.contract, p.account, N(accounts), [&](const key_value_object& obj){
+                            EOS_ASSERT( obj.value.size() >= sizeof(asset), chain::asset_type_exception, "Invalid data on table");
 
-                        asset cursor;
-                        fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
-                        fc::raw::unpack(ds, cursor);
+                            asset cursor;
+                            fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                            fc::raw::unpack(ds, cursor);
 
-                        EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
+                            EOS_ASSERT( cursor.get_symbol().valid(), chain::asset_type_exception, "Invalid asset");
 
-                        if( cursor.symbol_name() == t.symbol ) {
-                            t.quantity = cursor.to_real();
-                            t.precision = cursor.decimals();
+                            if( cursor.symbol_name() == t.symbol ) {
+                                t.quantity = asset_amount_to_string(cursor);
+                                t.precision = cursor.decimals();
+                                result.tokens.emplace_back(t);
+                            }
+
+                            // return false if we are looking for one and found it, true otherwise
+                            return !(cursor.symbol_name() == t.symbol);
+
+                        }, [&](){
+                            asset cursor = asset(0, chain::symbol(chain::string_to_symbol(it->get<int>(2),t.symbol.c_str())));
+                            t.quantity = asset_amount_to_string( cursor );
+                            t.precision = it->get<int>(2);
                             result.tokens.emplace_back(t);
-                        }
-
-                        // return false if we are looking for one and found it, true otherwise
-                        return !(cursor.symbol_name() == t.symbol);
-
-                    }, [&](){
-                        t.quantity = 0;
-                        t.precision = it->get<int>(2);
-                        result.tokens.emplace_back(t);
-                    });
-
+                        });
+                    } catch(fc::exception& e) {
+                        wlog("${e}",("e",e.what()));
+                    } catch(std::exception& e) {
+                        wlog("${e}",("e",e.what()));
+                    } catch (...) {
+                        wlog("unknown");
+                    }
                 }
-            } catch(std::exception e) {
-                wlog("${e}",("e",e.what()));
-            } catch (...) {
-                wlog("unknown");
-            }
+            
             
             return result;
         }

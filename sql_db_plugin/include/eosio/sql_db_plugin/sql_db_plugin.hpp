@@ -37,7 +37,7 @@ class read_only{
         //get tokens
         struct token {
             account_name     contract;
-            double            quantity;
+            string           quantity;
             string           symbol;
             uint8_t          precision;
         };
@@ -126,6 +126,18 @@ class read_only{
         // search info
         template<typename Function, typename Function2>
         void walk_key_value_table(const name& code, const name& scope, const name& table, Function f, Function2 f2) const;
+
+        string asset_amount_to_string(asset cursor) const{
+            string sign = cursor.get_amount() < 0 ? "-" : "";
+            int64_t abs_amount = std::abs(cursor.get_amount());
+            string result = fc::to_string( static_cast<int64_t>(abs_amount) / cursor.precision());
+            if( cursor.decimals() )
+            {
+                auto fract = static_cast<int64_t>(abs_amount) % cursor.precision();
+                result += "." + fc::to_string(cursor.precision() + fract).erase(0,1);
+            }
+            return sign + result;
+        }
 
 };
 
