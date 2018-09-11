@@ -134,9 +134,7 @@ namespace eosio {
         auto& chain = my->chain_plug->chain();
         
         my->accepted_block_connection.emplace(chain.accepted_block.connect([this,block_num_start]( const chain::block_state_ptr& bs){
-            ilog("${bn}->",("bn",bs->block_num));
             if( bs->block_num < block_num_start ) return ;
-            ilog("${bn}",("bn",bs->block_num));
             my->accepted_block(bs);
         } ));   
     }
