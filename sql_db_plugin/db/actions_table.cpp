@@ -179,7 +179,8 @@ namespace eosio {
                         json_str = fc::json::to_string( abi_def );
 
                         try{
-                            *m_session << "UPDATE accounts SET abi = :abi, updated_at = NOW() WHERE name = :name",soci::use(json_str),soci::use(setabi.account.to_string());
+                            *m_session << "INSERT INTO accounts ( name, abi )  VALUES( :name, :abi ) on  DUPLICATE key UPDATE abi = :abi, updated_at =  NOW() "
+                                ,soci::use(setabi.account.to_string()),soci::use(json_str),soci::use(json_str);
                             // ilog("update abi ${n}",("n",action.account.to_string()));
                         } catch(soci::mysql_soci_error e) {
                             wlog("soci::error: ${e}",("e",e.what()) );
