@@ -19,6 +19,7 @@ const char* BUFFER_SIZE_OPTION = "sql_db-queue-size";
 const char* SQL_DB_URI_OPTION = "sql_db-uri";
 const char* SQL_DB_ACTION_FILTER_ON = "sql_db-action-filter-on";
 const char* SQL_DB_CONTRACT_FILTER_OUT = "sql_db-contract-filter-out";
+const char* TRACE_START_OPTION = "sql_db-trace-start";
 }
 
 namespace fc { class variant; }
@@ -32,6 +33,7 @@ namespace eosio {
             sql_db_plugin_impl(){};
             ~sql_db_plugin_impl(){};
 
+            bool start_parse_trace = false;
             chain_plugin* chain_plug = nullptr;
             std::shared_ptr<sql_database> sql_db;
 
@@ -61,6 +63,13 @@ namespace eosio {
         handler->push_block_state(bs);
     }
 
+    void sql_db_plugin_impl::applied_transaction( const chain::transaction_trace_ptr& tc){
+
+        if(tc->action_traces.size()==1 && tc->action_traces[0].act.name.to_string() == "onblock" ) return ;
+
+        const trace_and_block_time tbt{ tc, chain_plug->chain().pending_block_time() };
+        handler->push_transaction_trace(tbt);
+    }
 
     sql_db_plugin::sql_db_plugin():my(new sql_db_plugin_impl ){}
 
@@ -86,6 +95,8 @@ namespace eosio {
                 "saved action with filter on")
                 (SQL_DB_CONTRACT_FILTER_OUT,bpo::value<std::string>(),
                 "saved action without filter out")
+                (TRACE_START_OPTION,bpo::value<std::string>()->default_value(""),
+                "The trace to start sync.")
                 ;
     }
 
@@ -108,6 +119,13 @@ namespace eosio {
         if (uri_str.empty()){
             wlog("db URI not specified => eosio::sql_db_plugin disabled.");
             return;
+        }
+
+        std::string trace_id_str = options.at(TRACE_START_OPTION).as<std::string>();
+        boost::replace_all(trace_id_str," ","");
+        if (trace_id_str.empty()){
+            ilog("trace_id_str is null, parse all trace.");
+            my->start_parse_trace = true;
         }
 
         ilog("connecting to ${u}", ("u", uri_str));
@@ -133,10 +151,18 @@ namespace eosio {
         FC_ASSERT(my->chain_plug);
         auto& chain = my->chain_plug->chain();
         
-        my->accepted_block_connection.emplace(chain.accepted_block.connect([this,block_num_start]( const chain::block_state_ptr& bs){
-            if( bs->block_num < block_num_start ) return ;
-            my->accepted_block(bs);
-        } ));   
+        // my->accepted_block_connection.emplace(chain.accepted_block.connect([this,block_num_start]( const chain::block_state_ptr& bs){
+        //     if( bs->block_num < block_num_start ) return ;
+        //     my->accepted_block(bs);
+        // } ));
+
+        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this,trace_id_str](const chain::transaction_trace_ptr& tt){
+            if(my->start_parse_trace){
+                my->applied_transaction(tt);
+            } else if( tt->id.str() == trace_id_str ) {
+                my->start_parse_trace = true;
+            }
+        } ));
     }
 
     void sql_db_plugin::plugin_startup() {

@@ -30,19 +30,25 @@ class consumer final : public boost::noncopyable {
         void queue(boost::mutex&, boost::condition_variable&, Queue&, const Entry&, size_t );
 
         void push_transaction_metadata( const chain::transaction_metadata_ptr& );
+        void push_transaction_trace( const trace_and_block_time& );
         void push_block_state( const chain::block_state_ptr& );
         void run_blocks();
+        void run_traces();
 
         std::deque<chain::block_state_ptr> block_state_queue;
         std::deque<chain::block_state_ptr> block_state_process_queue;
         std::deque<chain::transaction_metadata_ptr> transaction_metadata_queue;
         std::deque<chain::transaction_metadata_ptr> transaction_metadata_process_queue;
+        std::deque<trace_and_block_time> transaction_trace_queue;
+        std::deque<trace_and_block_time> transaction_trace_process_queue;
 
         std::unique_ptr<sql_database> db;
         size_t queue_size;
         boost::atomic<bool> exit{false};
         boost::thread consume_thread_run_blocks;
         boost::mutex mtx_blocks;
+        boost::thread consume_thread_run_traces;
+        boost::mutex mtx_traces;
         boost::condition_variable condition;
 
     };
@@ -51,7 +57,8 @@ class consumer final : public boost::noncopyable {
         db(std::move(db)),
         queue_size(queue_size),
         exit(false),
-        consume_thread_run_blocks(boost::thread([&]{this->run_blocks();}))
+        consume_thread_run_blocks(boost::thread([&]{this->run_blocks();})),
+        consume_thread_run_traces(boost::thread([&]{this->run_traces();}))
         { }
 
     consumer::~consumer() {
@@ -98,6 +105,18 @@ class consumer final : public boost::noncopyable {
             elog("STD Exception while accepted_block ${e}", ("e", e.what()));
         } catch (...) {
             elog("Unknown exception while accepted_block");
+        }
+    }
+
+    void consumer::push_transaction_trace( const trace_and_block_time& tt){
+        try {
+            queue(mtx_traces, condition, transaction_trace_queue, tt, queue_size);
+        } catch (fc::exception& e) {
+            elog("FC Exception while applied_transaction ${e}", ("e", e.to_string()));
+        } catch (std::exception& e) {
+            elog("STD Exception while applied_transaction ${e}", ("e", e.what()));
+        } catch (...) {
+            elog("Unknown exception while applied_transaction");
         }
     }
 
@@ -148,7 +167,56 @@ class consumer final : public boost::noncopyable {
         }
         
         ilog("Consumer thread End run_blocks");
-    }  
+    }
+
+    void consumer::run_traces(){
+        ilog("Consumer thread Start run_traces");
+        while (!exit) { 
+            try{
+                boost::mutex::scoped_lock lock(mtx_traces);
+                while(transaction_trace_queue.empty() && !exit){
+                    condition.wait(lock);
+                }
+
+                size_t transaction_trace_size = transaction_trace_queue.size();
+                if( transaction_trace_size > 0 ){
+                    transaction_trace_process_queue = std::move(transaction_trace_queue);
+                }
+
+                lock.unlock();
+
+                if( transaction_trace_size > (queue_size * 0.75)) {
+                    wlog("reversible queue size: ${q}", ("q", transaction_trace_size));
+                } else if (exit) {
+                    ilog("reversible draining queue, size: ${q}", ("q", transaction_trace_size));
+                }          
+
+                // process blocks
+                while (!transaction_trace_process_queue.empty()) {
+                    const auto& tc = transaction_trace_process_queue.front();
+                    try{
+                        db->consume_transaction_trace( tc );
+                    } catch (fc::exception& e) {
+                        elog("FC Exception while consuming block ${e}", ("e", e.to_string()));
+                    } catch (std::exception& e) {
+                        elog("STD Exception while consuming block ${e}", ("e", e.what()));
+                    } catch (...) {
+                        elog("Unknown exception while consuming block");
+                    } 
+                    transaction_trace_process_queue.pop_front();
+                }
+
+                condition.notify_all();
+            } catch (std::exception& e) {
+                elog("lose some catch ${e}", ("e", e.what()));
+            } catch (...) {
+                elog("Unknown exception while consuming block");
+            }  
+
+        }
+        
+        ilog("Consumer thread End run_traces");
+    }
 
 } // namespace
 

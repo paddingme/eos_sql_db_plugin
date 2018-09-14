@@ -50,4 +50,21 @@ namespace eosio
         }
     }
 
+    void sql_database::consume_transaction_trace( const trace_and_block_time& tbt ){
+        ilog("${t} ${id}",("t",tbt.block_time)("id",tbt.trace->id.str()));
+        auto session = m_session_pool->get_session();
+        dfs_inline_traces( session, tbt.trace->action_traces, tbt.trace->id, tbt.block_time  );
+    }
+
+    void sql_database::dfs_inline_traces( std::shared_ptr<soci::session> session, vector<chain::action_trace> trace,  chain::transaction_id_type transaction_id, chain::block_timestamp_type block_time ){
+        for(auto& atc : trace){
+            if( atc.receipt.receiver == atc.act.account ){
+                auto is_success = m_actions_table->add( session, atc.act, transaction_id, block_time, m_action_filter_on );
+                if( !is_success && atc.inline_traces.size()!=0 ){
+                    dfs_inline_traces( session, atc.inline_traces, transaction_id, block_time );
+                }
+            }
+        }
+    }
+
 } // namespace

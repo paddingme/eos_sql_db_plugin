@@ -5,20 +5,21 @@
 
 namespace eosio {
 
-    void actions_table::add( std::shared_ptr<soci::session> m_session, chain::action action, chain::transaction_id_type transaction_id, chain::block_timestamp_type block_time, std::vector<std::string> filter_out ) {
-
-        chain::abi_def abi;
-        std::string abi_def_account;
-        chain::abi_serializer abis;
-        soci::indicator ind;
-        const auto transaction_id_str = transaction_id.str();
-        const auto timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
-
-        string json = add_data( m_session, action );
-        system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
-        string json_auth = fc::json::to_string(action.authorization);
+    bool actions_table::add( std::shared_ptr<soci::session> m_session, chain::action action, chain::transaction_id_type transaction_id, chain::block_timestamp_type block_time, std::vector<std::string> filter_out ) {
 
         if( std::find(filter_out.begin(), filter_out.end(), action.name.to_string())!=filter_out.end() ){
+
+            chain::abi_def abi;
+            std::string abi_def_account;
+            chain::abi_serializer abis;
+            soci::indicator ind;
+            const auto transaction_id_str = transaction_id.str();
+            const auto timestamp = std::chrono::seconds{block_time.operator fc::time_point().sec_since_epoch()}.count();
+
+            string json = add_data( m_session, action );
+            system_contract_arg dataJson = fc::json::from_string(json).as<system_contract_arg>();
+            string json_auth = fc::json::to_string(action.authorization);
+
             try{
                 *m_session << "INSERT INTO actions(account, created_at, name, data, authorization, transaction_id, eosto, eosfrom, receiver, payer, newaccount, sellram_account) "
                                 "VALUES (:ac, FROM_UNIXTIME(:ca), :na, :da, :auth, :ti, :to, :form, :receiver, :payer, :newaccount, :sellram_account) ",
@@ -40,22 +41,25 @@ namespace eosio {
                 wlog("insert action failed in ${n}::${a}",("n",action.account.to_string())("a",action.name.to_string()));
                 wlog("${data}",("data",fc::json::to_string(action)));
             }
-        }
 
-        try {
-            parse_actions( m_session, action );
-        }  catch(fc::exception& e) {
-            wlog("fc exception: ${e}",("e",e.what()));
-        } catch(soci::mysql_soci_error e) {
-            wlog("soci::error: ${e}",("e",e.what()) );
-        } catch(std::exception& e){
-            wlog(e.what());
-        } catch(...){
-            wlog("Unknown excpetion.");
+            try {
+                auto is_success = parse_actions( m_session, action );
+                return is_success;
+            }  catch(fc::exception& e) {
+                wlog("fc exception: ${e}",("e",e.what()));
+            } catch(soci::mysql_soci_error e) {
+                wlog("soci::error: ${e}",("e",e.what()) );
+            } catch(std::exception& e){
+                wlog(e.what());
+            } catch(...){
+                wlog("Unknown excpetion.");
+            }
+
         }
+        return false;
     }
 
-    void actions_table::parse_actions( std::shared_ptr<soci::session> m_session, chain::action action ) {
+    bool actions_table::parse_actions( std::shared_ptr<soci::session> m_session, chain::action action ) {
 
         chain::abi_def abi;
         std::string abi_def_account;
@@ -70,7 +74,7 @@ namespace eosio {
         } else if (action.account == chain::config::system_account_name) {
             abi = chain::eosio_contract_abi(abi);
         } else {
-            return; // no ABI no party. Should we still store it?
+            return false; // no ABI no party. Should we still store it?
         }
 
         abis.set_abi(abi, max_serialization_time);
@@ -100,7 +104,7 @@ namespace eosio {
                             soci::use(public_key_active),
                             soci::use(permission_active);
                 }
-
+                return true;
             }else if( action.name == N(voteproducer) ){
 
                 auto voter = abi_data["voter"].as<chain::name>().to_string();
@@ -123,7 +127,7 @@ namespace eosio {
                 } catch(...) {
                     wlog(" ${voter} ${proxy} ${producers}",("voter",voter)("proxy",proxy)("producers",producers));
                 }
-
+                return true;
             }
 
         }else{
@@ -134,7 +138,7 @@ namespace eosio {
                 auto maximum_supply = abi_data["maximum_supply"].as<chain::asset>();
 
                 if(issuer.empty() || maximum_supply.get_amount() <= 0){
-                    return ;
+                    return false;
                 }
 
                 string insertassets;
@@ -155,9 +159,10 @@ namespace eosio {
                     wlog("${sql}",("sql",insertassets) );
                     wlog( "create asset failed. ${issuer} ${maximum_supply}",("issuer",issuer)("maximum_supply",maximum_supply) );
                 }
-
+                return true;
             }
         }
+        return false;
     }
 
 
