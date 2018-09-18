@@ -51,7 +51,7 @@ namespace eosio
     }
 
     void sql_database::consume_transaction_trace( const trace_and_block_time& tbt ){
-        ilog("${t} ${id}",("t",tbt.block_time)("id",tbt.trace->id.str()));
+        // ilog("${t} ${id}",("t",tbt.block_time)("id",tbt.trace->id.str()));
         auto session = m_session_pool->get_session();
         dfs_inline_traces( session, tbt.trace->action_traces, tbt.trace->id, tbt.block_time  );
     }

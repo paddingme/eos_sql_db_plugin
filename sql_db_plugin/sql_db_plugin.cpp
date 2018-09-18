@@ -198,6 +198,14 @@ namespace eosio {
             EOS_ASSERT( false, chain::contract_table_query_exception, "Table ${table} is not specified in the ABI", ("table",table_name) );
         }
 
+        template<typename Api>
+        auto make_resolver( const Api* api, const fc::microseconds& max_serialization_time ){
+            return [api, max_serialization_time](const name& account) -> optional<abi_serializer> {  
+                abi_def abi = get_abi(api->db,account);
+                return abi_serializer(abi, max_serialization_time);
+            };
+        }
+
 
         read_only::get_tokens_result read_only::get_tokens( const get_tokens_params& p )const {
             get_tokens_result result;
@@ -387,6 +395,55 @@ namespace eosio {
                     result.request_time = ref["request_time"].as<string>();
                     result.net_amount = ref["net_amount"].as<asset>();
                     result.cpu_amount = ref["cpu_amount"].as<asset>();
+
+                    return true;
+                },[&](){});
+            }
+            return result;
+        }
+
+        read_only::get_multisig_result read_only::get_multisig( const get_multisig_params& p)const{
+            get_multisig_result result;
+
+            auto proposals = sql_db->m_actions_table->get_proposal(sql_db->m_session_pool->get_session(), p.account.to_string());
+
+            abi_def abi = get_abi(db,N(eosio.msig));
+            abi_serializer abis( abi, abi_serializer_max_time );
+
+            for(auto it = proposals.begin() ; it != proposals.end(); it++){
+                name proposer = string_to_name(it->get<string>(0).c_str());
+                name proposal_name = string_to_name(it->get<string>(1).c_str());
+                proposal pro;
+                walk_key_value_table(N(eosio.msig), proposer, N(approvals), [&](const key_value_object& obj){
+                    fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                    auto row = abis.binary_to_variant(abis.get_table_type(N(approvals)), ds, abi_serializer_max_time);
+                    if( row["proposal_name"].as<string>() == proposal_name.to_string() ){
+                        pro.proposer = proposer.to_string();
+                        pro.proposal_name = row["proposal_name"].as<name>();
+                        pro.transaction = "";
+                        pro.requested_approvals = fc::json::to_string(row["requested_approvals"]);
+                        pro.provided_approvals = fc::json::to_string(row["provided_approvals"]);
+                        return false;
+                    }
+
+                    return true;
+                },[&](){});
+
+                walk_key_value_table(N(eosio.msig), proposer, N(proposal), [&](const key_value_object& obj){
+                    fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                    auto row = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
+                    if( row["proposal_name"].as<string>() == proposal_name.to_string() ){
+                        auto trx_hex = row["packed_transaction"].as_string();ilog("1");
+                        vector<char> trx_blob(trx_hex.size()/2);ilog("2");
+                        fc::from_hex(trx_hex, trx_blob.data(), trx_blob.size());ilog("3");
+                        transaction trx = fc::raw::unpack<transaction>(trx_blob);ilog("4");
+
+                        fc::variant pretty_output;
+                        abi_serializer::to_variant(trx, pretty_output, make_resolver(this, abi_serializer_max_time), abi_serializer_max_time);
+                        pro.transaction = fc::json::to_string(pretty_output);
+                        result.proposal.emplace_back(pro);
+                        return false;
+                    }
 
                     return true;
                 },[&](){});

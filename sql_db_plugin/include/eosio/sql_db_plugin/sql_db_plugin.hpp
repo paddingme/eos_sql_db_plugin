@@ -25,11 +25,11 @@ namespace sql_db_apis{
 
 class read_only{
 
-    const controller& db;
-    const fc::microseconds abi_serializer_max_time;
-    const std::shared_ptr<sql_database> sql_db;
-
     public:
+
+        const controller& db;
+        const fc::microseconds abi_serializer_max_time;
+        const std::shared_ptr<sql_database> sql_db;
 
         read_only(const controller& db, const fc::microseconds& abi_serializer_max_time, const std::shared_ptr<sql_database> sql_db)
             : db(db), abi_serializer_max_time(abi_serializer_max_time),sql_db(sql_db) {}
@@ -122,16 +122,24 @@ class read_only{
 
         get_refund_result get_refund( const get_refund_params& p )const;
 
-        //get ram
-        // struct get_ram_params{
-        //     account_name account;
-        // }
+        //multisig
+        struct get_multisig_params{
+            account_name account;
+        };
 
-        // struct get_ram_result{
-        //     int64_t ram_usage = 0;
-        // }
+        struct proposal{
+            name proposer;
+            name proposal_name;
+            string transaction;
+            string requested_approvals;
+            string provided_approvals;
+        };
 
-        // get_ram_result get_ram( const get_ram_params& p )const;
+        struct get_multisig_result{
+            vector<proposal> proposal;
+        };
+
+        get_multisig_result get_multisig( const get_multisig_params& p )const;
 
         // search info
         template<typename Function, typename Function2>
@@ -209,6 +217,11 @@ FC_REFLECT(eosio::sql_db_apis::read_only::get_userresource_result, (net_weight)(
 
 FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_result, (request_time)(net_amount)(cpu_amount) )
+
+FC_REFLECT(eosio::sql_db_apis::read_only::get_multisig_params, (account) )
+FC_REFLECT(eosio::sql_db_apis::read_only::proposal, (proposer)(proposal_name)(transaction)(requested_approvals)(provided_approvals) )
+FC_REFLECT(eosio::sql_db_apis::read_only::get_multisig_result, (proposal) )
+
 
 
 
