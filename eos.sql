@@ -279,6 +279,23 @@ CREATE TABLE `votes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `proposal`
+--
+
+DROP TABLE IF EXISTS `proposal`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `proposal` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `proposer` varchar(16) NOT NULL DEFAULT '0' COMMENT '多签发起者',
+  `proposal_name` varchar(16) NOT NULL DEFAULT '0' COMMENT '多签提案名称',
+  `requested_approvals` text NOT NULL DEFAULT '0' COMMENT '多签提案需要的权限',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_proposer_proposal_name` (`proposer`,`proposal_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
