@@ -43,8 +43,7 @@ namespace eosio {
             }
 
             try {
-                auto is_success = parse_actions( m_session, action );
-                return is_success;
+                parse_actions( m_session, action );
             }  catch(fc::exception& e) {
                 wlog("fc exception: ${e}",("e",e.what()));
             } catch(soci::mysql_soci_error e) {
@@ -54,12 +53,12 @@ namespace eosio {
             } catch(...){
                 wlog("Unknown excpetion.");
             }
-
+            return true;
         }
         return false;
     }
 
-    bool actions_table::parse_actions( std::shared_ptr<soci::session> m_session, chain::action action ) {
+    void actions_table::parse_actions( std::shared_ptr<soci::session> m_session, chain::action action ) {
 
         chain::abi_def abi;
         std::string abi_def_account;
@@ -74,7 +73,7 @@ namespace eosio {
         } else if (action.account == chain::config::system_account_name) {
             abi = chain::eosio_contract_abi(abi);
         } else {
-            return false; // no ABI no party. Should we still store it?
+            return ; // no ABI no party. Should we still store it?
         }
 
         abis.set_abi(abi, max_serialization_time);
@@ -104,7 +103,7 @@ namespace eosio {
                             soci::use(public_key_active),
                             soci::use(permission_active);
                 }
-                return true;
+
             }else if( action.name == N(voteproducer) ){
 
                 auto voter = abi_data["voter"].as<chain::name>().to_string();
@@ -127,7 +126,7 @@ namespace eosio {
                 } catch(...) {
                     wlog(" ${voter} ${proxy} ${producers}",("voter",voter)("proxy",proxy)("producers",producers));
                 }
-                return true;
+
             }
 
         } else if( action.account == N(eosio.msig) ) {
@@ -152,7 +151,7 @@ namespace eosio {
                 } catch(...) {
                     wlog("${pro} ${pro_name} ${request}",("pro",proposer)("pro_name",proposal_name)("request",requested));
                 }
-                return true;
+
             } else if( action.name == N(cancel) || action.name == N(exec) ) {
                 auto proposer = abi_data["proposer"].as<chain::name>().to_string();
                 auto proposal_name = abi_data["proposal_name"].as<chain::name>().to_string();
@@ -168,7 +167,6 @@ namespace eosio {
                 } catch(...) {
                     wlog("${pro} ${pro_name}",("pro",proposer)("pro_name",proposal_name));
                 }
-                return true;
 
             }
 
@@ -180,7 +178,7 @@ namespace eosio {
                 auto maximum_supply = abi_data["maximum_supply"].as<chain::asset>();
 
                 if(issuer.empty() || maximum_supply.get_amount() <= 0){
-                    return false;
+                    return ;
                 }
 
                 string insertassets;
@@ -201,10 +199,9 @@ namespace eosio {
                     wlog("${sql}",("sql",insertassets) );
                     wlog( "create asset failed. ${issuer} ${maximum_supply}",("issuer",issuer)("maximum_supply",maximum_supply) );
                 }
-                return true;
             }
         }
-        return false;
+
     }
 
 
