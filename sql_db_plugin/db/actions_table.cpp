@@ -131,13 +131,11 @@ namespace eosio {
             }
 
         } else if( action.account == N(eosio.msig) ) {
-            ilog("hi");
             if( action.name == N(propose) ){
                 auto proposer = abi_data["proposer"].as<chain::name>().to_string();
                 auto proposal_name = abi_data["proposal_name"].as<chain::name>().to_string();
                 auto requested = fc::json::to_string(abi_data["requested"]);//abi_data["requested"].as< vector<chain::permission_level> >();
 
-                ilog("${pro} ${pro_name} ${request}",("pro",proposer)("pro_name",proposal_name)("request",requested));
                 try{
                     *m_session << "INSERT INTO proposal ( proposer, proposal_name, requested_approvals )  VALUES( :pro, :proname, :req ) "
                             "on  DUPLICATE key UPDATE proposer = :pro, proposal_name =  :proname, requested_approvals =  :req ",
@@ -159,7 +157,6 @@ namespace eosio {
                 auto proposer = abi_data["proposer"].as<chain::name>().to_string();
                 auto proposal_name = abi_data["proposal_name"].as<chain::name>().to_string();
 
-                ilog("${pro} ${pro_name}",("pro",proposer)("pro_name",proposal_name));
                 try{
                     *m_session << "DELETE FROM proposal WHERE proposer = :pro and proposal_name = :proname ",
                             soci::use(proposer),
