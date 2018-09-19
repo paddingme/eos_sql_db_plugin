@@ -292,8 +292,7 @@ CREATE TABLE `proposal` (
   `proposal_name` varchar(16) NOT NULL DEFAULT '0' COMMENT '多签提案名称',
   `requested_approvals` text NOT NULL COMMENT '多签提案需要的权限',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_proposer_proposal_name` (`proposer`,`proposal_name`),
-  KEY `idx_req_approvals` (`requested_approvals`)
+  UNIQUE KEY `idx_proposer_proposal_name` (`proposer`,`proposal_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
