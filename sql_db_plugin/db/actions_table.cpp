@@ -83,8 +83,8 @@ namespace eosio {
 
             if( action.name == newaccount ){
                 auto action_data = action.data_as<chain::newaccount>();
-                *m_session << "INSERT INTO accounts (name) VALUES (:name)",
-                        soci::use(action_data.name.to_string());
+                *m_session << "INSERT INTO accounts (name) VALUES (:name) on  DUPLICATE key UPDATE name = :name",
+                        soci::use(action_data.name.to_string()),soci::use(action_data.name.to_string());
 
                 for (const auto& key_owner : action_data.owner.keys) {
                     string permission_owner = "owner";

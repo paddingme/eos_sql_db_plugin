@@ -6,7 +6,7 @@ namespace eosio {
 
 void accounts_table::add(std::shared_ptr<soci::session> m_session, string name) {
     try {
-        *m_session << "INSERT INTO accounts (name) VALUES (:name)",
+        *m_session << "REPLACE INTO accounts (name) VALUES (:name)",
             soci::use(name);
     } catch(soci::mysql_soci_error e) {
         wlog("soci::error: ${e}",("e",e.what()) );
