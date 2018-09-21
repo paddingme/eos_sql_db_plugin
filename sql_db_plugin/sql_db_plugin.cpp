@@ -402,8 +402,8 @@ namespace eosio {
             return result;
         }
 
-        read_only::get_proposals_result read_only::get_proposals( const get_proposals_params& p)const{
-            get_proposals_result result;
+        read_only::get_pending_proposals_result read_only::get_pending_proposals( const get_pending_proposals_params& p)const{
+            get_pending_proposals_result result;
 
             auto proposals = sql_db->m_actions_table->get_proposal(sql_db->m_session_pool->get_session(), p.account.to_string());
 
@@ -448,6 +448,49 @@ namespace eosio {
                     return true;
                 },[&](){});
             }
+            return result;
+        }
+
+        read_only::get_my_proposals_result read_only::get_my_proposals( const get_my_proposals_params& p)const{
+            get_my_proposals_result result;
+
+            abi_def abi = get_abi(db,N(eosio.msig));
+            abi_serializer abis( abi, abi_serializer_max_time );
+
+            name proposer = p.account;
+            proposal pro;
+            walk_key_value_table(N(eosio.msig), proposer, N(approvals), [&](const key_value_object& obj){
+                fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                auto row = abis.binary_to_variant(abis.get_table_type(N(approvals)), ds, abi_serializer_max_time);
+                pro.proposer = proposer.to_string();
+                pro.proposal_name = row["proposal_name"].as<name>();
+                pro.transaction = "";
+                pro.requested_approvals = fc::json::to_string(row["requested_approvals"]);
+                pro.provided_approvals = fc::json::to_string(row["provided_approvals"]);
+
+                walk_key_value_table(N(eosio.msig), proposer, N(proposal), [&](const key_value_object& obj){
+                    fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                    auto row = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
+                    if( row["proposal_name"].as<string>() == pro.proposal_name ){
+                        auto trx_hex = row["packed_transaction"].as_string();
+                        vector<char> trx_blob(trx_hex.size()/2);
+                        fc::from_hex(trx_hex, trx_blob.data(), trx_blob.size());
+                        transaction trx = fc::raw::unpack<transaction>(trx_blob);
+
+                        fc::variant pretty_output;
+                        abi_serializer::to_variant(trx, pretty_output, make_resolver(this, abi_serializer_max_time), abi_serializer_max_time);
+                        pro.transaction = fc::json::to_string(pretty_output);
+                        result.proposals.emplace_back(pro);
+                        return false;
+                    }
+
+                    return true;
+                },[&](){});
+
+
+                return true;
+            },[&](){});
+
             return result;
         }
 

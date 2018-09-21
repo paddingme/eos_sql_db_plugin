@@ -43,7 +43,8 @@ void sql_db_api_plugin::plugin_startup() {
        CHAIN_RO_CALL(get_hold_tokens),
        CHAIN_RO_CALL(get_userresource),
        CHAIN_RO_CALL(get_refund),
-       CHAIN_RO_CALL(get_proposals)
+       CHAIN_RO_CALL(get_pending_proposals),
+       CHAIN_RO_CALL(get_my_proposals)
    });
 }
 

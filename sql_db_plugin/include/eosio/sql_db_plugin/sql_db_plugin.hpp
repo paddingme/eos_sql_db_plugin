@@ -123,7 +123,8 @@ class read_only{
         get_refund_result get_refund( const get_refund_params& p )const;
 
         //multisig
-        struct get_proposals_params{
+        // need me to approve
+        struct get_pending_proposals_params{
             account_name account;
         };
 
@@ -135,11 +136,22 @@ class read_only{
             string provided_approvals;
         };
 
-        struct get_proposals_result{
+        struct get_pending_proposals_result{
             vector<proposal> proposals;
         };
 
-        get_proposals_result get_proposals( const get_proposals_params& p )const;
+        get_pending_proposals_result get_pending_proposals( const get_pending_proposals_params& p )const;
+
+        //my proposal
+        struct get_my_proposals_params{
+            account_name account;
+        };
+
+        struct get_my_proposals_result{
+            vector<proposal> proposals;
+        };
+
+        get_my_proposals_result get_my_proposals( const get_my_proposals_params& p )const;
 
         // search info
         template<typename Function, typename Function2>
@@ -218,9 +230,12 @@ FC_REFLECT(eosio::sql_db_apis::read_only::get_userresource_result, (net_weight)(
 FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_result, (request_time)(net_amount)(cpu_amount) )
 
-FC_REFLECT(eosio::sql_db_apis::read_only::get_proposals_params, (account) )
+FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposals_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::proposal, (proposer)(proposal_name)(transaction)(requested_approvals)(provided_approvals) )
-FC_REFLECT(eosio::sql_db_apis::read_only::get_proposals_result, (proposals) )
+FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposals_result, (proposals) )
+
+FC_REFLECT(eosio::sql_db_apis::read_only::get_my_proposals_params, (account) )
+FC_REFLECT(eosio::sql_db_apis::read_only::get_my_proposals_result, (proposals) )
 
 
 
