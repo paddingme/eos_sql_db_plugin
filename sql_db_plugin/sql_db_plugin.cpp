@@ -67,8 +67,7 @@ namespace eosio {
 
         if(tc->action_traces.size()==1 && tc->action_traces[0].act.name.to_string() == "onblock" ) return ;
 
-        const trace_and_block_time tbt{ tc, chain_plug->chain().pending_block_time() };
-        handler->push_transaction_trace(tbt);
+        handler->push_transaction_trace(tc);
     }
 
     sql_db_plugin::sql_db_plugin():my(new sql_db_plugin_impl ){}
@@ -121,13 +120,6 @@ namespace eosio {
             return;
         }
 
-        std::string trace_id_str = options.at(TRACE_START_OPTION).as<std::string>();
-        boost::replace_all(trace_id_str," ","");
-        if (trace_id_str.empty()){
-            ilog("trace_id_str is null, parse all trace.");
-            my->start_parse_trace = true;
-        }
-
         ilog("connecting to ${u}", ("u", uri_str));
         uint32_t block_num_start = options.at(BLOCK_START_OPTION).as<uint32_t>();
         auto queue_size = options.at(BUFFER_SIZE_OPTION).as<uint32_t>();
@@ -156,12 +148,10 @@ namespace eosio {
         //     my->accepted_block(bs);
         // } ));
 
-        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this,trace_id_str](const chain::transaction_trace_ptr& tt){
-            if(my->start_parse_trace){
-                my->applied_transaction(tt);
-            } else if( tt->id.str() == trace_id_str ) {
-                my->start_parse_trace = true;
-            }
+        my->applied_transaction_connection.emplace(chain.applied_transaction.connect([this,block_num_start](const chain::transaction_trace_ptr& tt){
+            if(tt->block_num < block_num_start) return;
+            my->applied_transaction(tt);
+            
         } ));
     }
 

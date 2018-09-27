@@ -18,11 +18,6 @@
 
 namespace eosio {
 
-struct trace_and_block_time{
-    chain::transaction_trace_ptr trace;
-    chain::block_timestamp_type block_time;
-};
-
 class sql_database {
     public:
         sql_database(const std::string& uri, uint32_t block_num_start, size_t pool_size);
@@ -34,7 +29,7 @@ class sql_database {
         void consume_irreversible_block_state( const chain::block_state_ptr& , boost::mutex::scoped_lock& , boost::condition_variable& condition,boost::atomic<bool>& exit);
 
         void consume_transaction_metadata( const chain::transaction_metadata_ptr& );
-        void consume_transaction_trace( const trace_and_block_time& );
+        void consume_transaction_trace( const chain::transaction_trace_ptr& );
 
         void dfs_inline_traces( std::shared_ptr<soci::session>, vector<chain::action_trace>,  chain::transaction_id_type, chain::block_timestamp_type );
 

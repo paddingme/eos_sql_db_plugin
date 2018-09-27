@@ -30,7 +30,7 @@ class consumer final : public boost::noncopyable {
         void queue(boost::mutex&, boost::condition_variable&, Queue&, const Entry&, size_t );
 
         void push_transaction_metadata( const chain::transaction_metadata_ptr& );
-        void push_transaction_trace( const trace_and_block_time& );
+        void push_transaction_trace( const chain::transaction_trace_ptr& );
         void push_block_state( const chain::block_state_ptr& );
         void run_blocks();
         void run_traces();
@@ -39,8 +39,8 @@ class consumer final : public boost::noncopyable {
         std::deque<chain::block_state_ptr> block_state_process_queue;
         std::deque<chain::transaction_metadata_ptr> transaction_metadata_queue;
         std::deque<chain::transaction_metadata_ptr> transaction_metadata_process_queue;
-        std::deque<trace_and_block_time> transaction_trace_queue;
-        std::deque<trace_and_block_time> transaction_trace_process_queue;
+        std::deque<chain::transaction_trace_ptr> transaction_trace_queue;
+        std::deque<chain::transaction_trace_ptr> transaction_trace_process_queue;
 
         std::unique_ptr<sql_database> db;
         size_t queue_size;
@@ -108,7 +108,7 @@ class consumer final : public boost::noncopyable {
         }
     }
 
-    void consumer::push_transaction_trace( const trace_and_block_time& tt){
+    void consumer::push_transaction_trace( const chain::transaction_trace_ptr& tt){
         try {
             queue(mtx_traces, condition, transaction_trace_queue, tt, queue_size);
         } catch (fc::exception& e) {
