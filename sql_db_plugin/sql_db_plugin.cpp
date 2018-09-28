@@ -4,6 +4,7 @@
  *  @author Alessandro Siniscalchi <asiniscalchi@gmail.com>
  */
 #include <eosio/sql_db_plugin/sql_db_plugin.hpp>
+#include <eosio/chain/authorization_manager.hpp>
 // #include "database.hpp"
 #include "consumer.hpp"
 
@@ -413,25 +414,33 @@ namespace eosio {
                         pro.transaction = "";
                         pro.requested_approvals = fc::json::to_string(row["requested_approvals"]);
                         pro.provided_approvals = fc::json::to_string(row["provided_approvals"]);
-                        return false;
-                    }
 
-                    return true;
-                },[&](){});
+                        walk_key_value_table(N(eosio.msig), proposer, N(proposal), [&](const key_value_object& obj){
+                            fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                            auto row2 = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
+                            if( row2["proposal_name"].as<string>() == proposal_name.to_string() ){
+                                auto trx_hex = row2["packed_transaction"].as_string();
+                                vector<char> trx_blob(trx_hex.size()/2);
+                                fc::from_hex(trx_hex, trx_blob.data(), trx_blob.size());
+                                transaction trx = fc::raw::unpack<transaction>(trx_blob);
 
-                walk_key_value_table(N(eosio.msig), proposer, N(proposal), [&](const key_value_object& obj){
-                    fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
-                    auto row = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
-                    if( row["proposal_name"].as<string>() == proposal_name.to_string() ){
-                        auto trx_hex = row["packed_transaction"].as_string();
-                        vector<char> trx_blob(trx_hex.size()/2);
-                        fc::from_hex(trx_hex, trx_blob.data(), trx_blob.size());
-                        transaction trx = fc::raw::unpack<transaction>(trx_blob);
+                                fc::variant pretty_output;
+                                abi_serializer::to_variant(trx, pretty_output, make_resolver(this, abi_serializer_max_time), abi_serializer_max_time);
+                                pro.transaction = fc::json::to_string(pretty_output);
+                                
+                                pro.status = 0;
+                                try {
+                                    db.get_authorization_manager().check_authorization(trx.actions,{},row["provided_approvals"].as<flat_set<permission_level>>(),fc::seconds(trx.delay_sec),[](){},false);
+                                    pro.status = 1;
+                                } catch( const authorization_exception& e ) {}
+                                
+                                result.proposals.emplace_back(pro);
+                                return false;
+                            }
 
-                        fc::variant pretty_output;
-                        abi_serializer::to_variant(trx, pretty_output, make_resolver(this, abi_serializer_max_time), abi_serializer_max_time);
-                        pro.transaction = fc::json::to_string(pretty_output);
-                        result.proposals.emplace_back(pro);
+                            return true;
+                        },[&](){});
+
                         return false;
                     }
 
@@ -460,9 +469,9 @@ namespace eosio {
 
                 walk_key_value_table(N(eosio.msig), proposer, N(proposal), [&](const key_value_object& obj){
                     fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
-                    auto row = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
-                    if( row["proposal_name"].as<string>() == pro.proposal_name ){
-                        auto trx_hex = row["packed_transaction"].as_string();
+                    auto row2 = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
+                    if( row2["proposal_name"].as<string>() == pro.proposal_name ){
+                        auto trx_hex = row2["packed_transaction"].as_string();
                         vector<char> trx_blob(trx_hex.size()/2);
                         fc::from_hex(trx_hex, trx_blob.data(), trx_blob.size());
                         transaction trx = fc::raw::unpack<transaction>(trx_blob);
@@ -470,6 +479,13 @@ namespace eosio {
                         fc::variant pretty_output;
                         abi_serializer::to_variant(trx, pretty_output, make_resolver(this, abi_serializer_max_time), abi_serializer_max_time);
                         pro.transaction = fc::json::to_string(pretty_output);
+
+                        pro.status = 0;
+                        try {
+                            db.get_authorization_manager().check_authorization(trx.actions,{},row["provided_approvals"].as<flat_set<permission_level>>(),fc::seconds(trx.delay_sec),[](){},false);
+                            pro.status = 1;
+                        } catch( const authorization_exception& e ) {}
+
                         result.proposals.emplace_back(pro);
                         return false;
                     }

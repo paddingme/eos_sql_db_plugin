@@ -134,6 +134,7 @@ class read_only{
             string transaction;
             string requested_approvals;
             string provided_approvals;
+            uint8_t status;
         };
 
         struct get_pending_proposals_result{
@@ -231,7 +232,7 @@ FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_result, (request_time)(net_amount)(cpu_amount) )
 
 FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposals_params, (account) )
-FC_REFLECT(eosio::sql_db_apis::read_only::proposal, (proposer)(proposal_name)(transaction)(requested_approvals)(provided_approvals) )
+FC_REFLECT(eosio::sql_db_apis::read_only::proposal, (proposer)(proposal_name)(transaction)(requested_approvals)(provided_approvals)(status) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposals_result, (proposals) )
 
 FC_REFLECT(eosio::sql_db_apis::read_only::get_my_proposals_params, (account) )
