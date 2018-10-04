@@ -89,20 +89,68 @@ namespace eosio {
                 for (const auto& key_owner : action_data.owner.keys) {
                     string permission_owner = "owner";
                     string public_key_owner = static_cast<string>(key_owner.key);
-                    *m_session << "INSERT INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
+                    *m_session << "REPLACE INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
                             soci::use(action_data.name.to_string()),
                             soci::use(public_key_owner),
                             soci::use(permission_owner);
                 }
 
+                for (const auto& account_owner : action_data.owner.accounts) {
+                    string permission_owner = "owner";
+                    *m_session << "REPLACE INTO accounts_control(controlled_account, controlled_permission, controlling_account, controlling_permission) VALUES (:ac, :cape, :cla, :clape) ",
+                            soci::use(action_data.name.to_string()),
+                            soci::use(permission_owner),
+                            soci::use(account_owner.permission.actor.to_string()),
+                            soci::use(account_owner.permission.permission.to_string());
+                }
+
                 for (const auto& key_active : action_data.active.keys) {
                     string permission_active = "active";
                     string public_key_active = static_cast<string>(key_active.key);
-                    *m_session << "INSERT INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
+                    *m_session << "REPLACE INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
                             soci::use(action_data.name.to_string()),
                             soci::use(public_key_active),
                             soci::use(permission_active);
                 }
+
+                for (const auto& account_owner : action_data.active.accounts) {
+                    string permission_active = "active";
+                    *m_session << "REPLACE INTO accounts_control(controlled_account, controlled_permission, controlling_account, controlling_permission) VALUES (:ac, :cape, :cla, :clape) ",
+                            soci::use(action_data.name.to_string()),
+                            soci::use(permission_active),
+                            soci::use(account_owner.permission.actor.to_string()),
+                            soci::use(account_owner.permission.permission.to_string());
+                }
+
+            }else if( action.name == N(updateauth) ){
+
+                const auto update_auth = action.data_as<chain::updateauth>();
+
+                *m_session << "DELETE FROM accounts_keys WHERE account= :ac and permission = :pe ",soci::use(update_auth.account.to_string()),soci::use(update_auth.permission.to_string());
+                *m_session << "DELETE FROM accounts_control WHERE controlled_account= :ac and controlled_permission = :pe ",soci::use(update_auth.account.to_string()),soci::use(update_auth.permission.to_string());
+
+                for (const auto& key_owner : update_auth.auth.keys) {
+                    string public_key_owner = static_cast<string>(key_owner.key);
+                    *m_session << "REPLACE INTO accounts_keys(account, public_key, permission) VALUES (:ac, :ke, :pe) ",
+                            soci::use(update_auth.account.to_string()),
+                            soci::use(public_key_owner),
+                            soci::use(update_auth.permission.to_string());
+                }
+
+                for (const auto& account_owner : update_auth.auth.accounts) {
+                    *m_session << "REPLACE INTO accounts_control(controlled_account, controlled_permission, controlling_account, controlling_permission) VALUES (:ac, :cape, :cla, :clape) ",
+                            soci::use(update_auth.account.to_string()),
+                            soci::use(update_auth.permission.to_string()),
+                            soci::use(account_owner.permission.actor.to_string()),
+                            soci::use(account_owner.permission.permission.to_string());
+                }
+
+            }else if( action.name == N(deleteauth) ){
+
+                const auto delete_auth = action.data_as<chain::deleteauth>();
+
+                *m_session << "DELETE FROM accounts_keys WHERE account= :ac and permission = :pe ",soci::use(delete_auth.account.to_string()),soci::use(delete_auth.permission.to_string());
+                *m_session << "DELETE FROM accounts_control WHERE controlled_account= :ac and controlled_permission = :pe ",soci::use(delete_auth.account.to_string()),soci::use(delete_auth.permission.to_string());
 
             }else if( action.name == N(voteproducer) ){
 
