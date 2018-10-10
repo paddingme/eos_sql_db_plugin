@@ -143,6 +143,18 @@ class read_only{
 
         get_pending_proposals_result get_pending_proposals( const get_pending_proposals_params& p )const;
 
+        //get_pending_proposal
+        struct get_pending_proposal_params{
+            name proposer;
+            name proposal_name;
+        };
+
+        struct get_pending_proposal_result{
+            vector<proposal> proposals;
+        };
+
+        get_pending_proposal_result get_pending_proposal( const get_pending_proposal_params& p )const;
+
         //my proposal
         struct get_my_proposals_params{
             account_name account;
@@ -234,6 +246,9 @@ FC_REFLECT(eosio::sql_db_apis::read_only::get_refund_result, (request_time)(net_
 FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposals_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::proposal, (proposer)(proposal_name)(transaction)(requested_approvals)(provided_approvals)(status) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposals_result, (proposals) )
+
+FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposal_params, (proposer)(proposal_name) )
+FC_REFLECT(eosio::sql_db_apis::read_only::get_pending_proposal_result, (proposals) )
 
 FC_REFLECT(eosio::sql_db_apis::read_only::get_my_proposals_params, (account) )
 FC_REFLECT(eosio::sql_db_apis::read_only::get_my_proposals_result, (proposals) )

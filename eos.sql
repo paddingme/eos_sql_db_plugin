@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: eos
 -- ------------------------------------------------------
--- Server version	8.0.11
+-- Server version 8.0.11
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -55,28 +55,7 @@ CREATE TABLE `accounts_keys` (
   `public_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '公钥',
   `permission` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '权限名称',
   PRIMARY KEY (`id`),
-  KEY `account` (`account`),
-  UNIQUE KEY `idx_ca_pk_per` (`account`,`public_key`,`permission`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `accounts_control`
---
-
-DROP TABLE IF EXISTS `accounts_control`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
- SET character_set_client = utf8mb4 ;
-CREATE TABLE `accounts_control` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `controlled_account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '被控制账户',
-  `controlled_permission` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '被控制权限名称',
-  `controlling_account` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '控制账号',
-  `controlling_permission` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '控制权限',
-  PRIMARY KEY (`id`),
-  KEY `controlled_account` (`controlled_account`),
-  KEY `controlling_account` (`controlling_account`),
-  UNIQUE KEY `idx_ca_per_cla` (`controlled_account`,`controlled_permission`,`controlling_account`,`controlling_permission`)
+  KEY `account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

@@ -450,6 +450,57 @@ namespace eosio {
             return result;
         }
 
+        read_only::get_pending_proposal_result read_only::get_pending_proposal( const get_pending_proposal_params& p)const{
+            get_pending_proposal_result result;
+
+            abi_def abi = get_abi(db,N(eosio.msig));
+            abi_serializer abis( abi, abi_serializer_max_time );
+
+            proposal pro;
+            walk_key_value_table(N(eosio.msig), p.proposer, N(approvals), [&](const key_value_object& obj){
+                fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                auto row = abis.binary_to_variant(abis.get_table_type(N(approvals)), ds, abi_serializer_max_time);
+
+                if( p.proposal_name != row["proposal_name"].as<name>() ) return true;
+
+                pro.proposer = p.proposer.to_string();
+                pro.proposal_name = row["proposal_name"].as<name>();
+                pro.transaction = "";
+                pro.requested_approvals = fc::json::to_string(row["requested_approvals"]);
+                pro.provided_approvals = fc::json::to_string(row["provided_approvals"]);
+
+                walk_key_value_table(N(eosio.msig), p.proposer, N(proposal), [&](const key_value_object& obj){
+                    fc::datastream<const char *> ds(obj.value.data(), obj.value.size());
+                    auto row2 = abis.binary_to_variant(abis.get_table_type(N(proposal)), ds, abi_serializer_max_time);
+                    if( row2["proposal_name"].as<string>() == pro.proposal_name ){
+                        auto trx_hex = row2["packed_transaction"].as_string();
+                        vector<char> trx_blob(trx_hex.size()/2);
+                        fc::from_hex(trx_hex, trx_blob.data(), trx_blob.size());
+                        transaction trx = fc::raw::unpack<transaction>(trx_blob);
+
+                        fc::variant pretty_output;
+                        abi_serializer::to_variant(trx, pretty_output, make_resolver(this, abi_serializer_max_time), abi_serializer_max_time);
+                        pro.transaction = fc::json::to_string(pretty_output);
+
+                        pro.status = 0;
+                        try {
+                            db.get_authorization_manager().check_authorization(trx.actions,{},row["provided_approvals"].as<flat_set<permission_level>>(),fc::seconds(trx.delay_sec),[](){},false);
+                            pro.status = 1;
+                        } catch( const authorization_exception& e ) {}
+
+                        result.proposals.emplace_back(pro);
+                        return false;
+                    }
+
+                    return false;
+                },[&](){});
+
+                return true;
+            },[&](){});
+
+            return result;
+        }
+
         read_only::get_my_proposals_result read_only::get_my_proposals( const get_my_proposals_params& p)const{
             get_my_proposals_result result;
 
