@@ -492,7 +492,7 @@ namespace eosio {
                         return false;
                     }
 
-                    return false;
+                    return true;
                 },[&](){});
 
                 return true;
